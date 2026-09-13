@@ -1,0 +1,23 @@
+{
+  "_fixture": "SYNTHETIC malformed BPIQ catalyst record, served only in the 'bpiq_malformed_record' demo scenario. market_cap is a string, violating the documented integer type.",
+  "records": [
+    {
+      "id": 5021,
+      "company": { "ticker": "MALF", "name": "Malformed Record Example", "last_price": "4.00", "market_cap": "412M" },
+      "ticker": "MALF",
+      "drug_name": "MF-1",
+      "indications": [],
+      "indications_text": "",
+      "stage_event": { "id": 31, "label": "Phase 3 Topline data", "stage_label": "Phase 3", "event_label": "Topline data" },
+      "note": "Deliberately malformed record.",
+      "catalyst_date": "{{today+70}}",
+      "has_catalyst": true,
+      "catalyst_source": null,
+      "is_big_mover": false,
+      "is_suspected_mover": false,
+      "is_hedge_fund_pick": false,
+      "is_hedge_fund_avoid": false,
+      "is_high_mgmt_interest": false
+    }
+  ]
+}

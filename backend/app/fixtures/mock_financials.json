@@ -1,0 +1,21 @@
+{
+  "_label": "DEMO MOCK FINANCIALS. Synthetic cash and burn values for fictional companies. No approved provider supplies these fields (BPIQ Apex has none; Alpaca has no fundamentals). Never used in live mode.",
+  "records": {
+    "AURX": { "cash_usd": 412000000, "monthly_net_burn_usd": 15800000, "as_of_days_ago": 75 },
+    "BRVN": { "cash_usd": 690000000, "monthly_net_burn_usd": 22000000, "as_of_days_ago": 75 },
+    "KSTL": { "cash_usd": 250000000, "monthly_net_burn_usd": 9000000, "as_of_days_ago": 75 },
+    "HLMR": { "cash_usd": 180000000, "monthly_net_burn_usd": 6000000, "as_of_days_ago": 75 },
+    "MRDN": { "cash_usd": 1100000000, "monthly_net_burn_usd": 30000000, "as_of_days_ago": 75 },
+    "PNTX": { "cash_usd": 21000000, "monthly_net_burn_usd": 1400000, "as_of_days_ago": 75 },
+    "SLVR": { "cash_usd": 38000000, "monthly_net_burn_usd": 5100000, "as_of_days_ago": 75 },
+    "QVLT": { "cash_usd": 95000000, "monthly_net_burn_usd": 4200000, "as_of_days_ago": 75 },
+    "OTCB": { "cash_usd": 12000000, "monthly_net_burn_usd": 600000, "as_of_days_ago": 106 },
+    "LUMX": { "cash_usd": 210000000, "monthly_net_burn_usd": 7000000, "as_of_days_ago": 44 },
+    "VNTA": { "cash_usd": 300000000, "monthly_net_burn_usd": 10000000, "as_of_days_ago": 75 },
+    "WSPR": { "cash_usd": 140000000, "monthly_net_burn_usd": 8900000, "as_of_days_ago": 75 },
+    "XNTH": { "cash_usd": 260000000, "monthly_net_burn_usd": 11000000, "as_of_days_ago": 75 },
+    "ZEPH": { "cash_usd": 170000000, "monthly_net_burn_usd": 6500000, "as_of_days_ago": 75 },
+    "RDGE": { "cash_usd": 220000000, "monthly_net_burn_usd": 9000000, "as_of_days_ago": 75 },
+    "TRLM": { "cash_usd": 510000000, "monthly_net_burn_usd": -1200000, "as_of_days_ago": 75 }
+  }
+}

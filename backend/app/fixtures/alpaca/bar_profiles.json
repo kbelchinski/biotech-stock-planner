@@ -1,0 +1,22 @@
+{
+  "_fixture": "GENERATOR SPEC for synthetic Alpaca daily bars (not an API payload). The demo transport turns these into documented /v2/stocks/bars responses. Offsets count back from the requested end session (0 = latest completed session). Symbols absent here return no bars (e.g. OTC names are not on the SIP feed).",
+  "profiles": {
+    "AURX": { "price": 14.2, "avg_weekly_turnover_usd": 9500000 },
+    "BRVN": { "price": 22.85, "avg_weekly_turnover_usd": 21000000 },
+    "KSTL": { "price": 9.6, "avg_weekly_turnover_usd": 7200000 },
+    "HLMR": { "price": 6.75, "avg_weekly_turnover_usd": 4800000 },
+    "MRDN": { "price": 41.1, "avg_weekly_turnover_usd": 38000000 },
+    "PNTX": { "price": 0.74, "avg_weekly_turnover_usd": 3600000 },
+    "SLVR": { "price": 3.15, "avg_weekly_turnover_usd": 5200000 },
+    "QVLT": { "price": 5.4, "avg_weekly_turnover_usd": 900000 },
+    "NOVF": { "price": 11.3, "avg_weekly_turnover_usd": 6100000 },
+    "LUMX": { "price": 18.4, "avg_weekly_turnover_usd": 4000000, "history_sessions": 7 },
+    "VNTA": { "price": 27.6, "avg_weekly_turnover_usd": 15500000 },
+    "WSPR": { "price": 16.05, "avg_weekly_turnover_usd": 8800000 },
+    "XNTH": { "price": 12.35, "avg_weekly_turnover_usd": 6600000 },
+    "ZEPH": { "price": 8.8, "avg_weekly_turnover_usd": 5000000 },
+    "RDGE": { "price": 31.2, "avg_weekly_turnover_usd": 12000000, "no_vwap_session_offsets": [2, 5, 9] },
+    "TRLM": { "price": 24.5, "avg_weekly_turnover_usd": 6000000, "missing_session_offsets": [1, 6] },
+    "SPY": { "price": 612.4, "avg_weekly_turnover_usd": 150000000000 }
+  }
+}
