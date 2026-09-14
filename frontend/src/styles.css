@@ -1353,13 +1353,10 @@ code {
 
 .price-chart-ranges {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 2px;
   background: var(--muted-bg);
   padding: 2px;
-  border-radius: 10px;
-  max-width: 280px;
+  border-radius: 999px;
 }
 
 .price-chart-ranges button {
@@ -1369,8 +1366,8 @@ code {
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
   cursor: pointer;
 }
 

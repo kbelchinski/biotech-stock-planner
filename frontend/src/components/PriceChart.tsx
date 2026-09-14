@@ -2,25 +2,12 @@ import { useMemo, useState } from "react";
 import { price, shortDate } from "../format";
 import type { PriceBar } from "../types";
 
-type Range = "5d" | "1m" | "3m" | "6m" | "ytd" | "1y";
+type Range = "5d" | "1m";
 
-const RANGES: { id: Range; label: string; sessions?: number }[] = [
+const RANGES: { id: Range; label: string; sessions: number }[] = [
   { id: "5d", label: "5D", sessions: 5 },
   { id: "1m", label: "1M", sessions: 21 },
-  { id: "3m", label: "3M", sessions: 63 },
-  { id: "6m", label: "6M", sessions: 126 },
-  { id: "ytd", label: "YTD" },
-  { id: "1y", label: "1Y", sessions: 252 },
 ];
-
-function barsForRange(bars: PriceBar[], range: Range): PriceBar[] {
-  if (range === "ytd") {
-    const year = bars[bars.length - 1]?.session_date.slice(0, 4);
-    return year ? bars.filter((bar) => bar.session_date >= `${year}-01-01`) : bars;
-  }
-  const count = RANGES.find((item) => item.id === range)?.sessions;
-  return count ? bars.slice(-count) : bars;
-}
 
 interface Props {
   ticker: string;
@@ -35,7 +22,10 @@ export function PriceChart({ ticker, bars }: Props) {
   const [range, setRange] = useState<Range>("1m");
   const [hover, setHover] = useState<number | null>(null);
 
-  const series = useMemo(() => barsForRange(sorted, range), [sorted, range]);
+  const series = useMemo(() => {
+    const count = RANGES.find((item) => item.id === range)?.sessions ?? 21;
+    return sorted.slice(-count);
+  }, [sorted, range]);
 
   if (sorted.length === 0) {
     return (
@@ -159,7 +149,7 @@ export function PriceChart({ ticker, bars }: Props) {
         </text>
       </svg>
       <p className="price-chart-note">
-        Alpaca daily SIP closes, up to 1 year. Not a live 1D tape — we do not fetch minute bars.
+        Alpaca daily bars (SIP, raw). This is not a live intraday tape — we do not fetch minute bars.
       </p>
     </section>
   );

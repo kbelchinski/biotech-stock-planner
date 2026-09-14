@@ -14,7 +14,6 @@ from datetime import UTC, date, datetime, timedelta
 from app.config import AppMode, Settings
 from app.domain.models import (
     LIQUIDITY_WEEKS,
-    PRICE_CHART_LOOKBACK_DAYS,
     ClassificationStatus,
     CompanyResult,
     CriterionKey,
@@ -255,17 +254,16 @@ class ScanOrchestrator:
 
         inputs = {t: CompanyInputs(ticker=t, profile=fetched.companies.get(t), catalysts=by_ticker[t]) for t in tickers}
 
-        bars_start = min(weeks[0].week_start, draft.latest_session - timedelta(days=PRICE_CHART_LOOKBACK_DAYS))
         progress(f"Fetching SIP daily bars for {len(tickers)} symbols from Alpaca", 3, TOTAL_STEPS)
         log.info(
             "scan %s step 3/6 Alpaca bars for %s symbols %s to %s",
             draft.scan_id[:8],
             len(tickers),
-            bars_start.isoformat(),
+            weeks[0].week_start.isoformat(),
             draft.latest_session.isoformat(),
         )
         try:
-            bars = await bundle.market_data.fetch_daily_bars(tickers, bars_start, draft.latest_session)
+            bars = await bundle.market_data.fetch_daily_bars(tickers, weeks[0].week_start, draft.latest_session)
             for ticker in tickers:
                 inputs[ticker].price_history = bars.histories.get(ticker)
                 if rejected := bars.rejected_bars.get(ticker):

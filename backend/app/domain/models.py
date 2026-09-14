@@ -243,9 +243,6 @@ class ScanCriteria(BaseModel):
 
 
 LIQUIDITY_WEEKS = 4
-# Calendar-day lookback for the drawer chart (5D / 1M / 3M / 6M / YTD / 1Y). Liquidity still
-# uses only LIQUIDITY_WEEKS; extra history is unused by the screen.
-PRICE_CHART_LOOKBACK_DAYS = 400
 
 
 class ScanOutcome(StrEnum):
