@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ExternalLink, FlaskConical, X } from "lucide-react";
+import { PriceChart } from "./PriceChart";
 import { CriterionBadge, EligibilityBadge } from "./StatusBadge";
 import { catalystLabel, dateTime, shortDate, usd } from "../format";
 import type { CatalystEvaluation, CompanyResult, CriterionResult, ScanRun, SourceRef } from "../types";
@@ -48,7 +49,8 @@ export function CompanyDrawer({ result, run, onClose }: Props) {
   }, []);
 
   const titleId = `drawer-title-${result.ticker}`;
-  const notApplied = result.criteria.filter((c) => c.status === "not_applied");
+  const visibleCriteria = result.criteria.filter((c) => c.key !== "runway" || c.status !== "not_applied");
+  const notApplied = visibleCriteria.filter((c) => c.status === "not_applied");
 
   return (
     <div className="drawer-root">
@@ -86,7 +88,7 @@ export function CompanyDrawer({ result, run, onClose }: Props) {
               Not applied in this scan: {notApplied.map((c) => c.label).join(", ")}. The result does not cover these criteria.
             </p>
           )}
-          {result.runway_is_mock && (
+          {result.runway_is_mock && result.criteria.some((c) => c.key === "runway" && c.status !== "not_applied") && (
             <p className="callout callout-mock">Cash runway uses demo mock financials. They don't come from any provider.</p>
           )}
           {result.issues.length > 0 && (
@@ -97,9 +99,11 @@ export function CompanyDrawer({ result, run, onClose }: Props) {
             </ul>
           )}
 
+          <PriceChart ticker={result.ticker} bars={result.price_bars ?? []} />
+
           <h3 className="section-title">Criteria</h3>
           <div className="criteria-list">
-            {result.criteria.map((criterion) => (
+            {visibleCriteria.map((criterion) => (
               <CriterionCard key={criterion.key} criterion={criterion} />
             ))}
           </div>

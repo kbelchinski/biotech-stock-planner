@@ -27,10 +27,10 @@ EXPECTED = {
     "HLMR": (D, CriterionKey.CATALYST),
     "MRDN": (D, CriterionKey.MARKET_CAP),
     "PNTX": (D, CriterionKey.PRICE),
-    "SLVR": (D, CriterionKey.RUNWAY),
+    "SLVR": (Q, None),
     "QVLT": (D, CriterionKey.LIQUIDITY),
     "OTCB": (D, CriterionKey.LISTING),
-    "NOVF": (I, CriterionKey.RUNWAY),
+    "NOVF": (Q, None),
     "LUMX": (I, CriterionKey.LIQUIDITY),
     "ZEPH": (I, CriterionKey.CATALYST),
 }
@@ -54,6 +54,7 @@ def demo_orchestrator(tmp_path, sleep=None):
 async def test_demo_scan_covers_every_scenario(tmp_path):
     orch, servers, _ = demo_orchestrator(tmp_path)
     run = await orch.run(ScanCriteria())
+    assert CriterionKey.RUNWAY not in run.not_applied_criteria
 
     assert run.mode is DataMode.DEMO
     assert run.outcome is ScanOutcome.SUCCESS
@@ -62,7 +63,11 @@ async def test_demo_scan_covers_every_scenario(tmp_path):
     for ticker, (eligibility, key) in EXPECTED.items():
         result = by_ticker[ticker]
         assert result.eligibility is eligibility, ticker
-        non_pass = {c.key for c in result.criteria if c.status is not CriterionStatus.PASS}
+        non_pass = {
+            c.key
+            for c in result.criteria
+            if c.status not in {CriterionStatus.PASS, CriterionStatus.NOT_APPLIED}
+        }
         if key is None:
             assert not non_pass, ticker
         elif ticker == "OTCB":
@@ -72,7 +77,7 @@ async def test_demo_scan_covers_every_scenario(tmp_path):
             assert non_pass == {key}, (ticker, non_pass)
 
     s = run.summary
-    assert (s.evaluated, s.qualifying, s.failed, s.insufficient_data) == (17, 6, 8, 3)
+    assert (s.evaluated, s.qualifying, s.failed, s.insufficient_data) == (17, 8, 7, 2)
     assert (s.undated_excluded, s.duplicate_records, s.rejected_records) == (1, 1, 0)
     assert len(by_ticker["BRVN"].catalysts) == 3
     assert by_ticker["RDGE"].turnover_method.count("APPROXIMATION") == 1
@@ -159,7 +164,7 @@ def live_orchestrator(tmp_path, **overrides):
 
 
 async def test_live_pipeline_never_contains_mock_financials(tmp_path):
-    run = await live_orchestrator(tmp_path).run(ScanCriteria())
+    run = await live_orchestrator(tmp_path).run(ScanCriteria(runway_enabled=True))
     assert run.mode is DataMode.LIVE
     assert '"is_mock":true' not in run.model_dump_json()
     for result in run.results:
@@ -171,10 +176,10 @@ async def test_live_pipeline_never_contains_mock_financials(tmp_path):
     assert any("unavailable" in n for n in run.notices)
 
 
-async def test_live_scan_with_runway_disabled_labels_not_applied(tmp_path):
-    run = await live_orchestrator(tmp_path).run(ScanCriteria(runway_enabled=False))
-    assert run.not_applied_criteria == [CriterionKey.RUNWAY]
-    # SLVR (runway fail) and NOVF (runway unknown) now qualify on the remaining criteria.
+async def test_live_scan_does_not_apply_runway_by_default(tmp_path):
+    run = await live_orchestrator(tmp_path).run(ScanCriteria())
+    assert run.not_applied_criteria == []
+    assert all(c.status is CriterionStatus.NOT_APPLIED for r in run.results for c in r.criteria if c.key is CriterionKey.RUNWAY)
     assert run.summary.qualifying == 8
     assert {"SLVR", "NOVF"} <= {r.ticker for r in run.results if r.eligibility is Eligibility.QUALIFIES}
 

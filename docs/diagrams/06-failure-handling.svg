@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 700" role="img" aria-labelledby="t d">
+  <title id="t">Which failures stop a scan</title>
+  <desc id="d">A BPIQ failure stops the scan. Alpaca price or listing failures mark those criteria Unknown and the scan continues.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="840" height="700" rx="12" fill="#f6f8fa"/>
+
+  <polygon points="500,28 640,88 500,148 360,88" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="500" y="82" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">Did BPIQ succeed?</text>
+  <text x="500" y="102" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">Catalysts are required</text>
+
+  <line x1="360" y1="88" x2="200" y2="88" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="270" y="76" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#cf222e">No</text>
+  <rect x="24" y="56" width="176" height="64" rx="8" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="112" y="82" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#cf222e">Scan ends</text>
+  <text x="112" y="102" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#cf222e">unavailable / config</text>
+
+  <line x1="500" y1="148" x2="500" y2="196" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="520" y="180" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">Yes</text>
+
+  <polygon points="500,200 640,260 500,320 360,260" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="500" y="254" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">Did Alpaca bars</text>
+  <text x="500" y="274" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">succeed?</text>
+
+  <line x1="360" y1="260" x2="200" y2="260" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="270" y="248" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">No</text>
+  <rect x="24" y="228" width="176" height="64" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="112" y="254" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#9a6700">Price / liquidity</text>
+  <text x="112" y="274" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">Unknown, continue</text>
+  <line x1="112" y1="292" x2="112" y2="344" stroke="#59636e" stroke-width="1.5"/>
+  <line x1="112" y1="344" x2="500" y2="344" stroke="#59636e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <line x1="500" y1="320" x2="500" y2="368" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="520" y="352" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">Yes</text>
+
+  <polygon points="500,372 650,440 500,508 350,440" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="500" y="430" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">Did asset lookups</text>
+  <text x="500" y="450" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">succeed?</text>
+
+  <line x1="350" y1="440" x2="200" y2="440" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="260" y="428" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">Partly / no</text>
+  <rect x="24" y="408" width="176" height="64" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="112" y="434" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#9a6700">Listing Unknown</text>
+  <text x="112" y="454" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">affected tickers</text>
+  <line x1="112" y1="472" x2="112" y2="560" stroke="#59636e" stroke-width="1.5"/>
+  <line x1="112" y1="560" x2="360" y2="560" stroke="#59636e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <line x1="500" y1="508" x2="500" y2="548" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="520" y="536" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">Yes</text>
+
+  <rect x="360" y="552" width="280" height="80" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="500" y="586" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#1a7f37">Evaluate and save</text>
+  <text x="500" y="610" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">Results are written either way</text>
+</svg>

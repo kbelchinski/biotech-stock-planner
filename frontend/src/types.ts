@@ -77,6 +77,15 @@ export interface CriterionResult {
   };
 }
 
+export interface PriceBar {
+  session_date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export interface CompanyResult {
   ticker: string;
   name: string | null;
@@ -87,6 +96,7 @@ export interface CompanyResult {
   market_cap_usd: number | null;
   price: number | null;
   price_date: string | null;
+  price_bars?: PriceBar[];
   runway_months: number | null;
   runway_is_mock: boolean;
   avg_weekly_turnover_usd: number | null;

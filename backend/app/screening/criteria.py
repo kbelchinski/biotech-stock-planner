@@ -23,6 +23,7 @@ from app.domain.models import (
     Eligibility,
     FinancialSnapshot,
     ListingInfo,
+    PriceBarPoint,
     PriceHistory,
     ScanCriteria,
     SourceRef,
@@ -100,6 +101,17 @@ def evaluate_company(inputs: CompanyInputs, ctx: ScanContext) -> CompanyResult:
         market_cap_usd=inputs.profile.market_cap_usd if inputs.profile else None,
         price=price_value,
         price_date=ctx.latest_session if price_value is not None else None,
+        price_bars=[
+            PriceBarPoint(
+                session_date=bar.session_date,
+                open=bar.open,
+                high=bar.high,
+                low=bar.low,
+                close=bar.close,
+                volume=bar.volume,
+            )
+            for bar in (inputs.price_history.bars if inputs.price_history else [])
+        ],
         runway_months=runway_months,
         runway_is_mock=bool(inputs.financials and inputs.financials.source.is_mock),
         avg_weekly_turnover_usd=liquidity_meta.get("average_usd"),

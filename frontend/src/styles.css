@@ -1296,6 +1296,162 @@ code {
   color: var(--text-2);
 }
 
+.price-chart {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s3) var(--s4) var(--s3);
+}
+
+.price-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
+}
+
+.price-chart-last {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart-ccy {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.price-chart-change {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart-change.up {
+  color: var(--pass);
+}
+
+.price-chart-change.down {
+  color: var(--fail);
+}
+
+.price-chart-change.flat {
+  color: var(--text-3);
+}
+
+.price-chart-meta,
+.price-chart-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.price-chart-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  background: var(--muted-bg);
+  padding: 2px;
+  border-radius: 10px;
+  max-width: 280px;
+}
+
+.price-chart-ranges button {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.price-chart-ranges button.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.price-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+.price-chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.price-chart-prev {
+  stroke: var(--text-3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.price-chart-axis {
+  fill: var(--text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.price-chart-area {
+  fill: var(--accent-soft);
+  opacity: 0.65;
+}
+
+.price-chart-svg.is-down .price-chart-line {
+  stroke: var(--fail);
+}
+
+.price-chart-svg.is-down .price-chart-area {
+  fill: var(--fail-bg);
+}
+
+.price-chart-svg.is-up .price-chart-line {
+  stroke: var(--pass);
+}
+
+.price-chart-svg.is-up .price-chart-area {
+  fill: var(--pass-bg);
+}
+
+.price-chart-cross {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.price-chart-dot {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.price-chart-svg.is-down .price-chart-dot {
+  stroke: var(--fail);
+}
+
+.price-chart-svg.is-up .price-chart-dot {
+  stroke: var(--pass);
+}
+
 .callout {
   margin: 0;
   padding: var(--s2) var(--s3);

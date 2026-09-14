@@ -14,6 +14,7 @@ from datetime import UTC, date, datetime, timedelta
 from app.config import AppMode, Settings
 from app.domain.models import (
     LIQUIDITY_WEEKS,
+    PRICE_CHART_LOOKBACK_DAYS,
     ClassificationStatus,
     CompanyResult,
     CriterionKey,
@@ -29,6 +30,7 @@ from app.fixtures.transport import DemoScenario
 from app.providers.alpaca.normalize import MARKET_DATA_PROVIDER, TRADING_PROVIDER
 from app.providers.bpiq.normalize import PROVIDER as BPIQ_PROVIDER
 from app.providers.errors import ErrorKind, ProviderError
+from app.logging_setup import get_logger
 from app.providers.factory import (
     ConfigurationError,
     ProviderBundle,
@@ -38,6 +40,8 @@ from app.providers.factory import (
 from app.screening.criteria import CompanyInputs, ScanContext, evaluate_company
 from app.screening.market_calendar import MarketCalendar, new_york_today
 from app.storage.repository import ScanRepository
+
+log = get_logger("scan")
 
 ProgressCallback = Callable[[str, int, int], None]
 TOTAL_STEPS = 6
@@ -96,6 +100,15 @@ class ScanOrchestrator:
         today = new_york_today(started_at)
         latest_session = self._calendar.latest_completed_session(started_at)
         weeks = self._calendar.completed_weeks(latest_session, LIQUIDITY_WEEKS)
+        log.info(
+            "scan starting mode=%s scenario=%s today=%s latest_session=%s liquidity_weeks=%s-%s",
+            mode.value,
+            scenario.value if scenario else "-",
+            today.isoformat(),
+            latest_session.isoformat(),
+            weeks[0].week_start.isoformat() if weeks else "-",
+            weeks[-1].week_end.isoformat() if weeks else "-",
+        )
 
         draft = _Draft(
             scan_id=uuid.uuid4().hex,
@@ -115,6 +128,7 @@ class ScanOrchestrator:
         try:
             bundle = self._build_providers(mode, today, scenario)
         except ConfigurationError as exc:
+            log.error("scan %s configuration problem: %s", draft.scan_id[:8], "; ".join(exc.problems))
             draft.issues.append(
                 ScanIssue(
                     severity="error",
@@ -149,6 +163,13 @@ class ScanOrchestrator:
         prefilter = c.provider_market_cap_prefilter and c.market_cap_enabled
 
         progress("Fetching catalysts from BPIQ", 2, TOTAL_STEPS)
+        log.info(
+            "scan %s step 2/6 BPIQ catalysts %s to %s market_cap_prefilter=%s",
+            draft.scan_id[:8],
+            date_min.isoformat(),
+            date_max.isoformat(),
+            prefilter,
+        )
         try:
             fetched = await bundle.bpiq.fetch_upcoming_catalysts(
                 today=today,
@@ -158,6 +179,7 @@ class ScanOrchestrator:
                 market_cap_max=c.market_cap_max_usd if prefilter else None,
             )
         except ProviderError as exc:
+            log.error("scan %s BPIQ failed: %s", draft.scan_id[:8], exc.message)
             draft.issues.append(_issue(exc))
             return self._finish(draft, _fatal_outcome(exc), [])
 
@@ -216,25 +238,56 @@ class ScanOrchestrator:
                 f"{unrecognized} catalyst(s) have stage/event labels with no classification rule and are "
                 "treated as Unknown type."
             )
+        log.info(
+            "scan %s BPIQ done: records=%s catalysts=%s tickers=%s pages=%s rejected=%s undated=%s dupes=%s",
+            draft.scan_id[:8],
+            fetched.received_records,
+            len(fetched.catalysts),
+            len(tickers),
+            fetched.pages,
+            len(fetched.rejected),
+            fetched.undated_excluded,
+            fetched.duplicates,
+        )
         if not tickers:
+            log.info("scan %s no dated catalysts after BPIQ; finishing", draft.scan_id[:8])
             return self._finish(draft, None, [])
 
         inputs = {t: CompanyInputs(ticker=t, profile=fetched.companies.get(t), catalysts=by_ticker[t]) for t in tickers}
 
+        bars_start = min(weeks[0].week_start, draft.latest_session - timedelta(days=PRICE_CHART_LOOKBACK_DAYS))
         progress(f"Fetching SIP daily bars for {len(tickers)} symbols from Alpaca", 3, TOTAL_STEPS)
+        log.info(
+            "scan %s step 3/6 Alpaca bars for %s symbols %s to %s",
+            draft.scan_id[:8],
+            len(tickers),
+            bars_start.isoformat(),
+            draft.latest_session.isoformat(),
+        )
         try:
-            bars = await bundle.market_data.fetch_daily_bars(tickers, weeks[0].week_start, draft.latest_session)
+            bars = await bundle.market_data.fetch_daily_bars(tickers, bars_start, draft.latest_session)
             for ticker in tickers:
                 inputs[ticker].price_history = bars.histories.get(ticker)
                 if rejected := bars.rejected_bars.get(ticker):
                     inputs[ticker].issues.append(f"{len(rejected)} daily bar(s) rejected: {rejected[0]}")
         except ProviderError as exc:
+            log.error("scan %s Alpaca bars failed: %s", draft.scan_id[:8], exc.message)
             draft.issues.append(_issue(exc, tickers))
             for ticker in tickers:
                 inputs[ticker].market_data_error = exc.message
+        else:
+            missing_bars = sum(1 for t in tickers if not (bars.histories.get(t) and bars.histories[t].bars))
+            log.info(
+                "scan %s Alpaca bars done: pages=%s symbols_with_no_bars=%s rejected_symbols=%s",
+                draft.scan_id[:8],
+                bars.pages,
+                missing_bars,
+                len(bars.rejected_bars),
+            )
 
         progress("Verifying exchange listings", 4, TOTAL_STEPS)
         if c.listing_enabled:
+            log.info("scan %s step 4/6 Alpaca listings for %s symbols", draft.scan_id[:8], len(tickers))
             try:
                 assets = await bundle.assets.fetch_assets(tickers)
                 for ticker in tickers:
@@ -254,11 +307,25 @@ class ScanOrchestrator:
                         )
                     )
             except ProviderError as exc:
+                log.error("scan %s listing lookup failed: %s", draft.scan_id[:8], exc.message)
                 draft.issues.append(_issue(exc, tickers))
                 for ticker in tickers:
                     inputs[ticker].listing_error = exc.message
+            else:
+                found = sum(1 for value in assets.listings.values() if value is not None)
+                missing = sum(1 for value in assets.listings.values() if value is None)
+                log.info(
+                    "scan %s listings done: found=%s not_in_alpaca=%s errors=%s",
+                    draft.scan_id[:8],
+                    found,
+                    missing,
+                    len(assets.errors),
+                )
+        else:
+            log.info("scan %s step 4/6 listing criterion off; skipping Alpaca assets", draft.scan_id[:8])
 
         progress("Loading financial data", 5, TOTAL_STEPS)
+        log.info("scan %s step 5/6 financials mock=%s", draft.scan_id[:8], bundle.financials.is_mock)
         financials = await bundle.financials.fetch(tickers, today)
         if draft.mode is DataMode.LIVE and (
             bundle.financials.is_mock or any(s.source.is_mock for s in financials.snapshots.values())
@@ -269,8 +336,11 @@ class ScanOrchestrator:
             inputs[ticker].financials_unavailable_reason = financials.unavailable_reason
 
         progress("Evaluating criteria", 6, TOTAL_STEPS)
+        log.info("scan %s step 6/6 evaluating %s companies", draft.scan_id[:8], len(tickers))
         ctx = ScanContext(today=today, criteria=c, latest_session=draft.latest_session, weeks=weeks)
         results = [evaluate_company(inputs[t], ctx) for t in tickers]
+        for result in results:
+            log.debug("scan %s %s -> %s", draft.scan_id[:8], result.ticker, result.eligibility.value)
         results.sort(key=_result_sort_key)
         return self._finish(draft, None, results)
 
@@ -312,9 +382,21 @@ class ScanOrchestrator:
             summary=summary,
             results=results,
             issues=draft.issues,
-            not_applied_criteria=[k for k, on in enabled.items() if not on],
+            not_applied_criteria=[k for k, on in enabled.items() if not on and k is not CriterionKey.RUNWAY],
             notices=draft.notices,
             demo_scenario=draft.scenario.value if draft.scenario else None,
+        )
+        elapsed = (run.finished_at - run.started_at).total_seconds()
+        log.info(
+            "scan %s finished outcome=%s evaluated=%s qualifies=%s insufficient=%s fail=%s issues=%s in %.1fs",
+            run.id[:8],
+            run.outcome.value,
+            summary.evaluated,
+            summary.qualifying,
+            summary.insufficient_data,
+            summary.failed,
+            len(run.issues),
+            elapsed,
         )
         self._repository.save(run)
         return run

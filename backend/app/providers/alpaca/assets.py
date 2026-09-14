@@ -11,7 +11,10 @@ from urllib.parse import quote
 from app.domain.models import ListingInfo
 from app.providers.alpaca.normalize import normalize_asset
 from app.providers.errors import ErrorKind, ProviderError
+from app.logging_setup import get_logger
 from app.providers.http import ProviderHttpClient
+
+log = get_logger("alpaca.assets")
 
 GLOBAL_FAILURES = frozenset({ErrorKind.AUTH, ErrorKind.PERMISSION})
 
@@ -41,13 +44,19 @@ class AlpacaAssetsClient:
     async def fetch_assets(self, symbols: list[str]) -> AssetsFetchResult:
         result = AssetsFetchResult(retrieved_at=self._clock())
         unique = sorted({s.strip().upper() for s in symbols if s.strip()})
+        log.info("Alpaca assets: looking up %s symbols", len(unique))
         outcomes = await asyncio.gather(*(self._fetch_one(s, result.retrieved_at) for s in unique))
         for symbol, outcome in zip(unique, outcomes, strict=True):
             if isinstance(outcome, ProviderError):
+                log.warning("Alpaca asset %s failed: %s", symbol, outcome.message)
                 if outcome.kind in GLOBAL_FAILURES:
                     raise outcome
                 result.errors[symbol] = outcome
             else:
+                if outcome is None:
+                    log.debug("Alpaca asset %s not found", symbol)
+                else:
+                    log.debug("Alpaca asset %s -> %s %s", symbol, outcome.exchange, outcome.status)
                 result.listings[symbol] = outcome
         return result
 

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
+from typing import Any
 from urllib.parse import urlsplit
 
 from app.config import BPIQ_TRIAL_HORIZON_DAYS, BpiqAccessTier
@@ -17,7 +19,10 @@ from app.providers.bpiq.normalize import (
     parse_catalyst_envelope,
 )
 from app.providers.errors import ErrorKind, ProviderError
+from app.logging_setup import get_logger
 from app.providers.http import ProviderHttpClient
+
+log = get_logger("bpiq")
 
 MAX_PAGES = 200
 
@@ -110,6 +115,7 @@ class BpiqClient:
         seen_pages: set[str] = set()
         url: str | None = f"{self._base_url}/catalysts/"
         request_params: dict[str, str] | None = params
+        log.info("BPIQ query %s", " ".join(f"{k}={v}" for k, v in params.items()))
 
         while url is not None:
             if result.pages >= MAX_PAGES:
@@ -125,11 +131,22 @@ class BpiqClient:
             result.pages += 1
             if result.reported_count is None:
                 result.reported_count = envelope.count
+                log.info("BPIQ reported count=%s", envelope.count)
+            log.info(
+                "BPIQ page %s: %s records (running total %s/%s) next=%s",
+                result.pages,
+                len(envelope.results),
+                result.received_records + len(envelope.results),
+                result.reported_count,
+                "yes" if envelope.next else "no",
+            )
 
             for raw in envelope.results:
                 result.received_records += 1
+                _log_catalyst_result(raw)
                 normalized = normalize_catalyst(raw, result.retrieved_at)
                 if isinstance(normalized, RejectedRecord):
+                    log.warning("BPIQ skipped record %s: %s", normalized.record_id, normalized.reason)
                     result.rejected.append(normalized)
                     continue
                 catalyst = normalized.catalyst
@@ -165,3 +182,25 @@ class BpiqClient:
                 "Refusing to follow a pagination link outside the configured BPIQ API origin.",
             )
         return next_url
+
+
+def _log_catalyst_result(raw: Any) -> None:
+    """Print one Apex /catalysts/ result. The payload has no credentials."""
+    if not isinstance(raw, dict):
+        log.info("BPIQ /catalysts/ result %s", raw)
+        return
+    company = raw.get("company") if isinstance(raw.get("company"), dict) else {}
+    stage = raw.get("stage_event") if isinstance(raw.get("stage_event"), dict) else {}
+    log.info(
+        "BPIQ /catalysts/ id=%s ticker=%s company_ticker=%s company=%s date=%s stage=%s event=%s drug=%s cap=%s",
+        raw.get("id"),
+        raw.get("ticker"),
+        company.get("ticker"),
+        company.get("name"),
+        raw.get("catalyst_date"),
+        stage.get("stage_label"),
+        stage.get("event_label"),
+        raw.get("drug_name"),
+        company.get("market_cap"),
+    )
+    log.info("BPIQ /catalysts/ json %s", json.dumps(raw, default=str, ensure_ascii=True))

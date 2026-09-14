@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 280" role="img" aria-labelledby="t d">
+  <title id="t">How a company gets its overall result</title>
+  <desc id="d">Any Fail means Does not qualify. Else any Unknown means Insufficient data. Else Qualifies.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="920" height="280" rx="12" fill="#f6f8fa"/>
+
+  <rect x="24" y="108" width="168" height="64" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="108" y="136" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#0969da">Enabled criteria</text>
+  <text x="108" y="156" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#0969da">Switched-off ones ignored</text>
+  <line x1="192" y1="140" x2="236" y2="140" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <polygon points="300,80 380,140 300,200 220,140" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="300" y="136" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">Any Fail?</text>
+
+  <line x1="300" y1="200" x2="300" y2="228" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="316" y="220" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#cf222e">Yes</text>
+  <rect x="216" y="232" width="168" height="32" rx="8" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="300" y="253" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#cf222e">Does not qualify</text>
+
+  <line x1="380" y1="140" x2="468" y2="140" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="424" y="128" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">No</text>
+
+  <polygon points="552,80 632,140 552,200 472,140" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="552" y="136" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">Any Unknown?</text>
+
+  <line x1="552" y1="200" x2="552" y2="228" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="568" y="220" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">Yes</text>
+  <rect x="468" y="232" width="168" height="32" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="552" y="253" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#9a6700">Insufficient data</text>
+
+  <line x1="632" y1="140" x2="720" y2="140" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="676" y="128" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">No</text>
+
+  <rect x="724" y="108" width="172" height="64" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="810" y="146" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#1a7f37">Qualifies</text>
+</svg>

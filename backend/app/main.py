@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -20,6 +19,7 @@ from pydantic import BaseModel, Field
 from app.config import BPIQ_RATE_LIMITS_PER_MIN, BPIQ_TRIAL_HORIZON_DAYS, REPO_ROOT, Settings, get_settings
 from app.domain.models import CATALYST_TYPE_LABELS, DataMode, ScanCriteria
 from app.fixtures.transport import DEMO_SCENARIOS, DemoScenario
+from app.logging_setup import configure_logging, get_logger
 from app.providers.factory import live_configuration_problems
 from app.providers.financials import LIVE_RUNWAY_UNAVAILABLE
 from app.scan.export import scan_to_csv
@@ -27,7 +27,7 @@ from app.scan.orchestrator import ScanOrchestrator
 from app.screening.market_calendar import MarketCalendar, new_york_today
 from app.storage.repository import ScanRepository
 
-logger = logging.getLogger("catalyst_screener")
+log = get_logger("api")
 
 DIAGNOSTICS_FILE_NAME = "diagnostics.json"
 
@@ -64,10 +64,19 @@ class ScanJob:
 
 def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrator | None = None) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings.log_level)
     calendar = MarketCalendar()
     repository = ScanRepository(settings.database_path)
     orchestrator = orchestrator or ScanOrchestrator(settings=settings, calendar=calendar, repository=repository)
     jobs: dict[str, ScanJob] = {}
+    log.info(
+        "backend starting mode=%s log_level=%s db=%s bpiq_configured=%s alpaca_configured=%s",
+        settings.app_mode.value,
+        settings.log_level,
+        settings.database_path,
+        settings.bpiq_configured,
+        settings.alpaca_configured,
+    )
 
     app = FastAPI(title="Catalyst Screener API", docs_url="/api/docs", openapi_url="/api/openapi.json")
     app.add_middleware(
@@ -79,6 +88,7 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
 
     @app.get("/api/status")
     def status() -> dict[str, Any]:
+        log.debug("GET /api/status")
         now = datetime.now(UTC)
         mode = orchestrator.mode
         return {
@@ -123,12 +133,21 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
         if orchestrator.mode is DataMode.LIVE and request.demo_scenario is not None:
             raise HTTPException(400, "Demo scenarios are only available in demo mode.")
         if any(job.status == "running" for job in jobs.values()):
+            log.warning("POST /api/scans rejected: a scan is already running")
             raise HTTPException(409, "A scan is already running.")
         job = ScanJob(id=uuid.uuid4().hex)
         jobs[job.id] = job
+        log.info(
+            "POST /api/scans job=%s scenario=%s catalyst_window=%s-%s",
+            job.id[:8],
+            request.demo_scenario.value if request.demo_scenario else "-",
+            request.criteria.catalyst_min_days,
+            request.criteria.catalyst_max_days,
+        )
 
         def on_progress(message: str, step: int, total: int) -> None:
             job.message, job.step, job.total_steps = message, step, total
+            log.info("job %s progress %s/%s %s", job.id[:8], step, total, message)
 
         async def execute() -> None:
             try:
@@ -138,8 +157,9 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
                 job.scan_id = run.id
                 job.status = "completed"
                 job.message = "Scan finished"
+                log.info("job %s completed scan=%s outcome=%s", job.id[:8], run.id[:8], run.outcome.value)
             except Exception:
-                logger.exception("Scan job %s failed", job.id)
+                log.exception("job %s failed unexpectedly", job.id[:8])
                 job.status = "failed"
                 job.error = "The scan failed unexpectedly. Check the backend log for details."
 
@@ -152,10 +172,12 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
         job = jobs.get(job_id)
         if job is None:
             raise HTTPException(404, "Unknown scan job.")
+        log.debug("GET /api/scans/jobs/%s status=%s step=%s", job_id[:8], job.status, job.step)
         return job.public()
 
     @app.get("/api/scans/latest")
     def latest() -> dict[str, Any]:
+        log.debug("GET /api/scans/latest")
         mode = orchestrator.mode
         successful = repository.latest(mode, successful_only=True)
         attempt = repository.latest(mode, successful_only=False)
@@ -168,13 +190,18 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
 
     @app.get("/api/scans")
     def history(limit: int = 20) -> list[dict[str, Any]]:
-        return repository.history(orchestrator.mode, min(max(limit, 1), 100))
+        capped = min(max(limit, 1), 100)
+        rows = repository.history(orchestrator.mode, capped)
+        log.debug("GET /api/scans limit=%s returned=%s", capped, len(rows))
+        return rows
 
     @app.get("/api/scans/{scan_id}")
     def get_scan(scan_id: str) -> dict[str, Any]:
         run = repository.get(scan_id)
         if run is None or run.mode is not orchestrator.mode:
+            log.warning("GET /api/scans/%s not found for mode=%s", scan_id[:8], orchestrator.mode.value)
             raise HTTPException(404, "Scan not found for the current data mode.")
+        log.info("GET /api/scans/%s outcome=%s results=%s", scan_id[:8], run.outcome.value, len(run.results))
         return run.model_dump(mode="json")
 
     @app.get("/api/scans/{scan_id}/export.csv")

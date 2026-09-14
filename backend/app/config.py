@@ -64,6 +64,7 @@ class Settings(BaseSettings):
 
     database_path: Path = BACKEND_ROOT / "data" / "scans.sqlite3"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    log_level: str = "INFO"
 
     @property
     def alpaca_trading_base_url(self) -> str:

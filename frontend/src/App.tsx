@@ -14,6 +14,10 @@ const SUCCESSFUL_OUTCOMES = new Set(["success", "no_matches"]);
 const POLL_MS = 600;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function withoutRunwayFilter(criteria: ScanCriteria): ScanCriteria {
+  return { ...criteria, runway_enabled: false };
+}
+
 export default function App() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export default function App() {
       const [nextStatus, latest] = await Promise.all([api.status(), api.latest()]);
       if (!mounted.current) return;
       setStatus(nextStatus);
-      setCriteria((current) => current ?? latest.latest_successful?.criteria ?? nextStatus.defaults);
+      setCriteria((current) => withoutRunwayFilter(current ?? latest.latest_successful?.criteria ?? nextStatus.defaults));
       setLastSuccessful(latest.latest_successful);
       setAttempt(latest.latest_attempt);
     } catch (error) {
@@ -101,10 +105,10 @@ export default function App() {
         <aside className="sidebar" aria-label="Screening criteria">
           <FilterPanel
             criteria={criteria}
-            defaults={status.defaults}
+            defaults={withoutRunwayFilter(status.defaults)}
             status={status}
             disabled={running}
-            onChange={setCriteria}
+            onChange={(next) => setCriteria(withoutRunwayFilter(next))}
           />
         </aside>
         <section className="content">

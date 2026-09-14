@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="t d">
+  <title id="t">How the app is put together</title>
+  <desc id="d">The browser talks only to the local backend. The backend holds API keys and talks to BPIQ and Alpaca.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="960" height="540" rx="12" fill="#f6f8fa"/>
+
+  <rect x="24" y="24" width="912" height="300" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="44" y="52" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#656d76">YOUR COMPUTER</text>
+
+  <rect x="64" y="88" width="200" height="100" rx="10" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="164" y="130" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700" fill="#0969da">Browser UI</text>
+  <text x="164" y="154" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" fill="#0969da">React</text>
+
+  <line x1="264" y1="138" x2="388" y2="138" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="326" y="126" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">/api/... (no keys)</text>
+
+  <rect x="392" y="88" width="240" height="100" rx="10" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="512" y="130" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700" fill="#0969da">Backend</text>
+  <text x="512" y="154" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" fill="#0969da">FastAPI, port 8000</text>
+
+  <rect x="680" y="88" width="120" height="72" rx="10" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="740" y="118" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#9a6700">.env</text>
+  <text x="740" y="140" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">API keys</text>
+  <line x1="680" y1="124" x2="636" y2="124" stroke="#59636e" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="720" y="78" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#656d76">read at startup</text>
+
+  <rect x="392" y="224" width="240" height="72" rx="36" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="512" y="254" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#1a7f37">SQLite</text>
+  <text x="512" y="276" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">scan history, read / write</text>
+  <line x1="512" y1="188" x2="512" y2="220" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <path d="M 512 296 L 512 344" fill="none" stroke="#59636e" stroke-width="1.75"/>
+  <path d="M 164 344 L 800 344" fill="none" stroke="#59636e" stroke-width="1.75"/>
+  <line x1="164" y1="344" x2="164" y2="384" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <line x1="480" y1="344" x2="480" y2="384" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <line x1="800" y1="344" x2="800" y2="384" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+  <text x="760" y="318" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Backend sends the keys. Browser never does.</text>
+
+  <rect x="40" y="388" width="248" height="116" rx="10" fill="#fbefff" stroke="#8250df"/>
+  <text x="164" y="428" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">BPIQ Apex</text>
+  <text x="164" y="452" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">Upcoming catalysts</text>
+  <text x="164" y="474" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">api.bpiq.com</text>
+
+  <rect x="356" y="388" width="248" height="116" rx="10" fill="#fbefff" stroke="#8250df"/>
+  <text x="480" y="428" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">Alpaca Market Data</text>
+  <text x="480" y="452" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">Daily prices and volume</text>
+  <text x="480" y="474" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">data.alpaca.markets</text>
+
+  <rect x="676" y="388" width="248" height="116" rx="10" fill="#fbefff" stroke="#8250df"/>
+  <text x="800" y="428" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">Alpaca Trading</text>
+  <text x="800" y="452" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">Listing lookup only</text>
+  <text x="800" y="474" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">No orders placed</text>
+</svg>

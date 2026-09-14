@@ -4,7 +4,7 @@ import { EligibilityBadge } from "./StatusBadge";
 import { CRITERION_LABEL, ELIGIBILITY_LABEL, STATUS_LABEL, catalystLabel, price, primaryCatalyst, shortDate, usd } from "../format";
 import type { CatalystEvaluation, CompanyResult, Eligibility, ScanRun } from "../types";
 
-type SortKey = "ticker" | "days" | "market_cap" | "price" | "runway" | "turnover" | "eligibility";
+type SortKey = "ticker" | "days" | "market_cap" | "price" | "turnover" | "eligibility";
 type Filter = "all" | Eligibility;
 
 const ELIGIBILITY_RANK: Record<Eligibility, number> = { qualifies: 0, insufficient_data: 1, does_not_qualify: 2 };
@@ -27,7 +27,6 @@ const COLUMNS: { label: string; sort?: SortKey; className?: string }[] = [
   { label: "Days", sort: "days", className: "num" },
   { label: "Market cap", sort: "market_cap", className: "num" },
   { label: "Price", sort: "price", className: "num" },
-  { label: "Cash runway", sort: "runway", className: "num" },
   { label: "Avg weekly turnover", sort: "turnover", className: "num" },
   { label: "Result", sort: "eligibility" },
 ];
@@ -43,8 +42,6 @@ function sortValue(row: Row, key: SortKey): number | string | null {
       return r.market_cap_usd;
     case "price":
       return r.price;
-    case "runway":
-      return r.runway_months;
     case "turnover":
       return r.avg_weekly_turnover_usd;
     case "eligibility":
@@ -195,18 +192,17 @@ export function ResultsTable({ run, selectedTicker, onSelect }: Props) {
                   </div>
                 </td>
                 <td className="num">
-                  <RunwayCell result={result} />
-                </td>
-                <td className="num">
                   <TurnoverCell result={result} />
                 </td>
                 <td>
                   <div className="cell-result">
                     <EligibilityBadge value={result.eligibility} />
                     <span className="dots" aria-hidden>
-                      {result.criteria.map((c) => (
-                        <span key={c.key} className={`dot dot-${c.status}`} title={`${CRITERION_LABEL[c.key]}: ${STATUS_LABEL[c.status]}`} />
-                      ))}
+                      {result.criteria
+                        .filter((c) => c.key !== "runway")
+                        .map((c) => (
+                          <span key={c.key} className={`dot dot-${c.status}`} title={`${CRITERION_LABEL[c.key]}: ${STATUS_LABEL[c.status]}`} />
+                        ))}
                     </span>
                   </div>
                 </td>
@@ -228,23 +224,6 @@ export function ResultsTable({ run, selectedTicker, onSelect }: Props) {
       </p>
     </section>
   );
-}
-
-function RunwayCell({ result }: { result: CompanyResult }) {
-  const criterion = result.criteria.find((c) => c.key === "runway");
-  const mock = result.runway_is_mock ? <span className="tag tag-mock">Mock</span> : null;
-  if (result.runway_months != null) {
-    return (
-      <span className="cell-inline">
-        {result.runway_months.toFixed(1)} mo {mock}
-      </span>
-    );
-  }
-  if (criterion?.status === "pass") {
-    return <span className="cell-inline">No net burn {mock}</span>;
-  }
-  if (criterion?.status === "not_applied") return <span className="muted">Not applied</span>;
-  return <span className="muted">Unavailable</span>;
 }
 
 function TurnoverCell({ result }: { result: CompanyResult }) {

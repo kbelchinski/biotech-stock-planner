@@ -19,7 +19,6 @@ export function validateCriteria(c: ScanCriteria): string[] {
     [c.market_cap_min_usd, "market cap minimum"],
     [c.market_cap_max_usd, "market cap maximum"],
     [c.price_above_usd, "price threshold"],
-    [c.runway_min_months, "runway minimum"],
     [c.liquidity_min_avg_weekly_usd, "turnover threshold"],
   ];
   for (const [value, label] of numbers) {
@@ -101,17 +100,6 @@ export function FilterPanel({ criteria, defaults, status, disabled, onChange }: 
         <Group title="Stock price" enabled={criteria.price_enabled} onToggle={(v) => set("price_enabled", v)}>
           <NumberField label="Close above" prefix="$" step={0.01} value={criteria.price_above_usd} onChange={(v) => set("price_above_usd", v)} />
           <p className="hint">Latest completed regular-session close</p>
-        </Group>
-
-        <Group title="Cash runway" enabled={criteria.runway_enabled} onToggle={(v) => set("runway_enabled", v)}>
-          <NumberField label="At least" suffix="months" step={1} value={criteria.runway_min_months} onChange={(v) => set("runway_min_months", v)} />
-          {status.runway.available ? (
-            <p className="hint">
-              <span className="tag tag-mock">Mock</span> Demo financials. Not from any provider.
-            </p>
-          ) : (
-            <p className="hint hint-warn">{status.runway.note}</p>
-          )}
         </Group>
 
         <Group title="Liquidity" enabled={criteria.liquidity_enabled} onToggle={(v) => set("liquidity_enabled", v)}>

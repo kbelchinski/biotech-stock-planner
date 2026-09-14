@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from app.domain.models import DataMode, ScanOutcome, ScanRun, ScanSummary
+from app.logging_setup import get_logger
+
+log = get_logger("storage")
 
 SUCCESSFUL_OUTCOMES = frozenset({ScanOutcome.SUCCESS, ScanOutcome.NO_MATCHES})
 
@@ -35,6 +38,7 @@ class ScanRepository:
             path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as conn, conn:
             conn.executescript(_SCHEMA)
+        log.info("SQLite ready at %s", path)
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._path)
@@ -58,6 +62,7 @@ class ScanRepository:
                     run.model_dump_json(),
                 ),
             )
+        log.info("saved scan %s outcome=%s mode=%s", run.id[:8], run.outcome.value, run.mode.value)
 
     def get(self, scan_id: str) -> ScanRun | None:
         with closing(self._connect()) as conn:

@@ -14,6 +14,7 @@ import httpx
 
 from app.config import BPIQ_RATE_LIMITS_PER_MIN, BpiqAccessTier, Settings
 from app.domain.models import DataMode
+from app.logging_setup import get_logger
 from app.fixtures.transport import (
     DEMO_ALPACA_KEY_ID,
     DEMO_ALPACA_SECRET,
@@ -32,6 +33,8 @@ from app.providers.errors import ErrorKind
 from app.providers.financials import FinancialsProvider, MockFinancialsProvider, UnavailableFinancialsProvider
 from app.providers.http import ErrorHints, ProviderHttpClient, RateLimiter, RetryPolicy, Sleep
 from app.screening.market_calendar import MarketCalendar
+
+log = get_logger("providers")
 
 ASSETS_HINTS = {
     ErrorKind.AUTH: (
@@ -84,6 +87,12 @@ def build_live_providers(
     problems = live_configuration_problems(settings)
     if problems:
         raise ConfigurationError(problems)
+    log.info(
+        "building live providers tier=%s alpaca_account=%s trading_host=%s",
+        settings.bpiq_access_tier.value,
+        settings.alpaca_account_type.value,
+        settings.alpaca_trading_base_url,
+    )
     assert settings.bpiq_api_key and settings.alpaca_api_key_id and settings.alpaca_api_secret_key
     transports = transports or {}
     return _assemble(
@@ -108,6 +117,7 @@ def build_demo_providers(
     scenario: DemoScenario = DemoScenario.NORMAL,
     sleep: Sleep = asyncio.sleep,
 ) -> ProviderBundle:
+    log.info("building demo providers scenario=%s today=%s", scenario.value, today.isoformat())
     server = DemoProviderServer(today=today, scenario=scenario, calendar=calendar)
     bundle = _assemble(
         mode=DataMode.DEMO,

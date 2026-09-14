@@ -16,7 +16,10 @@ from typing import Any
 
 import httpx
 
+from app.logging_setup import format_url, get_logger
 from app.providers.errors import ErrorKind, ProviderError
+
+log = get_logger("http")
 
 Sleep = Callable[[float], Awaitable[None]]
 
@@ -94,37 +97,76 @@ class ProviderHttpClient:
         await self._client.aclose()
 
     async def get_json(self, url: str, params: Mapping[str, Any] | None = None) -> Any:
+        target = format_url(url, dict(params) if params else None)
         attempt = 0
         while True:
             if self._limiter is not None:
+                waited_from = time.monotonic()
                 await self._limiter.acquire()
+                waited = time.monotonic() - waited_from
+                if waited > 0.05:
+                    log.info("%s rate-limit wait %.1fs before %s", self.provider, waited, target)
             self.request_count += 1
+            started = time.monotonic()
             try:
                 response = await self._client.get(url, params=params)
             except httpx.TimeoutException:
+                elapsed_ms = (time.monotonic() - started) * 1000
+                log.warning("%s GET %s timed out after %.0fms (attempt %d)", self.provider, target, elapsed_ms, attempt + 1)
                 error = self._error(ErrorKind.TIMEOUT, "Request timed out.", retryable=True)
             except httpx.TransportError as exc:
+                elapsed_ms = (time.monotonic() - started) * 1000
+                log.warning(
+                    "%s GET %s transport %s after %.0fms (attempt %d)",
+                    self.provider,
+                    target,
+                    type(exc).__name__,
+                    elapsed_ms,
+                    attempt + 1,
+                )
                 error = self._error(
                     ErrorKind.UNAVAILABLE,
                     f"Could not reach the provider ({type(exc).__name__}).",
                     retryable=True,
                 )
             else:
+                elapsed_ms = (time.monotonic() - started) * 1000
                 if response.status_code < 400:
+                    log.info("%s GET %s -> %s in %.0fms", self.provider, target, response.status_code, elapsed_ms)
                     try:
                         return response.json()
                     except ValueError:
+                        log.error("%s GET %s -> %s was not JSON", self.provider, target, response.status_code)
                         raise self._error(
                             ErrorKind.INVALID_RESPONSE,
                             "Provider returned a response that is not valid JSON.",
                             status_code=response.status_code,
                         ) from None
+                log.warning(
+                    "%s GET %s -> %s in %.0fms (attempt %d)",
+                    self.provider,
+                    target,
+                    response.status_code,
+                    elapsed_ms,
+                    attempt + 1,
+                )
                 error = self._error_from_response(response)
 
             if not error.retryable or attempt >= self._retry.max_retries:
                 error.attempts = attempt + 1
+                log.error("%s giving up on %s: %s", self.provider, target, error.message)
                 raise error
-            await self._sleep(self._delay(attempt, error.retry_after))
+            delay = self._delay(attempt, error.retry_after)
+            log.warning(
+                "%s retry %d/%d on %s after %s; waiting %.1fs",
+                self.provider,
+                attempt + 1,
+                self._retry.max_retries,
+                target,
+                error.kind.value,
+                delay,
+            )
+            await self._sleep(delay)
             attempt += 1
 
     def _delay(self, attempt: int, server_delay: float | None) -> float:

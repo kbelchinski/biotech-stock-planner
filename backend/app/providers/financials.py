@@ -15,6 +15,9 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any, Protocol
 
 from app.domain.models import FinancialSnapshot, SourceRef
+from app.logging_setup import get_logger
+
+log = get_logger("financials")
 
 LIVE_RUNWAY_UNAVAILABLE = (
     "Cash runway is unavailable from the configured providers. BPIQ Apex catalysts contain no cash "
@@ -39,6 +42,7 @@ class UnavailableFinancialsProvider:
     is_mock = False
 
     async def fetch(self, tickers: list[str], today: date) -> FinancialsResult:
+        log.info("financials unavailable in live mode for %s tickers", len(tickers))
         return FinancialsResult(unavailable_reason=LIVE_RUNWAY_UNAVAILABLE)
 
 
@@ -53,6 +57,7 @@ class MockFinancialsProvider:
     async def fetch(self, tickers: list[str], today: date) -> FinancialsResult:
         retrieved_at = datetime.now(UTC)
         result = FinancialsResult()
+        log.info("financials demo mock: %s tickers, %s records in fixture", len(tickers), len(self._records))
         for ticker in tickers:
             record = self._records.get(ticker)
             if record is None:

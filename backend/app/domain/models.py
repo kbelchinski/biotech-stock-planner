@@ -175,6 +175,15 @@ class WeeklyTurnover(BaseModel):
     approximated_sessions: int
 
 
+class PriceBarPoint(BaseModel):
+    session_date: date
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+
 class CompanyResult(BaseModel):
     ticker: str
     name: str | None
@@ -185,6 +194,7 @@ class CompanyResult(BaseModel):
     market_cap_usd: float | None
     price: float | None
     price_date: date | None
+    price_bars: list[PriceBarPoint] = Field(default_factory=list)
     runway_months: float | None
     runway_is_mock: bool
     avg_weekly_turnover_usd: float | None
@@ -206,7 +216,7 @@ class ScanCriteria(BaseModel):
     price_enabled: bool = True
     price_above_usd: float = Field(1.0, ge=0)
 
-    runway_enabled: bool = True
+    runway_enabled: bool = False
     runway_min_months: float = Field(12, ge=0)
 
     liquidity_enabled: bool = True
@@ -233,6 +243,9 @@ class ScanCriteria(BaseModel):
 
 
 LIQUIDITY_WEEKS = 4
+# Calendar-day lookback for the drawer chart (5D / 1M / 3M / 6M / YTD / 1Y). Liquidity still
+# uses only LIQUIDITY_WEEKS; extra history is unused by the screen.
+PRICE_CHART_LOOKBACK_DAYS = 400
 
 
 class ScanOutcome(StrEnum):

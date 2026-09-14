@@ -14,7 +14,10 @@ from app.providers.alpaca.normalize import (
     parse_bars_page,
 )
 from app.providers.errors import ErrorKind, ProviderError
+from app.logging_setup import get_logger
 from app.providers.http import ProviderHttpClient
+
+log = get_logger("alpaca.bars")
 
 SYMBOLS_PER_REQUEST = 100
 BARS_PAGE_LIMIT = 10_000  # documented maximum; applies across all symbols in the request
@@ -65,9 +68,11 @@ class AlpacaMarketDataClient:
         unique = sorted({s.strip().upper() for s in symbols if s.strip()})
         result = BarsFetchResult(retrieved_at=self._clock(), feed=self.feed)
         collected: dict[str, dict[date, DailyBar]] = {s: {} for s in unique}
+        log.info("Alpaca bars: %s symbols %s to %s feed=%s", len(unique), start.isoformat(), end.isoformat(), self.feed)
 
         for offset in range(0, len(unique), SYMBOLS_PER_REQUEST):
             chunk = unique[offset : offset + SYMBOLS_PER_REQUEST]
+            log.info("Alpaca bars chunk %s-%s (%s symbols)", offset + 1, offset + len(chunk), len(chunk))
             await self._fetch_chunk(chunk, start, end, collected, result)
 
         for symbol in unique:
@@ -114,6 +119,15 @@ class AlpacaMarketDataClient:
                 params["page_token"] = token
             page = parse_bars_page(await self._http.get_json(f"{self._base_url}/v2/stocks/bars", params))
             result.pages += 1
+            symbols_on_page = len(page.bars or {})
+            bars_on_page = sum(len(v) for v in (page.bars or {}).values())
+            log.info(
+                "Alpaca bars page %s: %s symbols, %s bars, next_page=%s",
+                result.pages,
+                symbols_on_page,
+                bars_on_page,
+                "yes" if page.next_page_token else "no",
+            )
 
             for symbol, raw_bars in (page.bars or {}).items():
                 if symbol not in wanted:

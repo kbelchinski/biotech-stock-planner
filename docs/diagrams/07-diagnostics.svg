@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 280" role="img" aria-labelledby="t d">
+  <title id="t">What the connection check does</title>
+  <desc id="d">Checks keys, fetches one BPIQ page, validates records, optionally lists labels, then checks Alpaca bars and listing.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="920" height="280" rx="12" fill="#f6f8fa"/>
+
+  <rect x="20" y="80" width="132" height="88" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="86" y="116" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#0969da">Keys</text>
+  <text x="86" y="138" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#0969da">present in</text>
+  <text x="86" y="156" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#0969da">.env?</text>
+  <line x1="152" y1="124" x2="176" y2="124" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="180" y="80" width="132" height="88" rx="8" fill="#fbefff" stroke="#8250df"/>
+  <text x="246" y="116" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#8250df">BPIQ</text>
+  <text x="246" y="138" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">1 small page</text>
+  <text x="246" y="156" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">next 30 days</text>
+  <line x1="312" y1="124" x2="336" y2="124" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="340" y="80" width="132" height="88" rx="8" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="406" y="116" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Validate</text>
+  <text x="406" y="138" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">records vs</text>
+  <text x="406" y="156" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">the schema</text>
+  <line x1="472" y1="124" x2="496" y2="124" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="500" y="80" width="132" height="88" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="566" y="116" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#9a6700">--labels</text>
+  <text x="566" y="138" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">list every</text>
+  <text x="566" y="156" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#9a6700">stage / event</text>
+  <line x1="632" y1="124" x2="656" y2="124" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="660" y="36" width="132" height="72" rx="8" fill="#fbefff" stroke="#8250df"/>
+  <text x="726" y="66" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#8250df">Alpaca bars</text>
+  <text x="726" y="88" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">SPY, SIP</text>
+  <line x1="726" y1="108" x2="726" y2="128" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="660" y="132" width="132" height="72" rx="8" fill="#fbefff" stroke="#8250df"/>
+  <text x="726" y="162" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#8250df">Alpaca asset</text>
+  <text x="726" y="184" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#8250df">SPY listing</text>
+  <line x1="726" y1="204" x2="726" y2="224" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="620" y="228" width="212" height="40" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="726" y="246" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1a7f37">PASS / FAIL report</text>
+  <text x="726" y="262" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="10" fill="#1a7f37">backend/data/diagnostics.json</text>
+</svg>

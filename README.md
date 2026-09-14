@@ -5,7 +5,7 @@ A single-user web app that screens US-listed biotech equities for upcoming **Pha
 - **Demo mode** works immediately with no API keys. It runs synthetic responses in the documented BPIQ and Alpaca schemas through the same pipeline as live data.
 - **Live mode** uses BPIQ Apex REST (catalysts) and Alpaca (historical SIP daily bars and asset listing) once credentials are configured. It never falls back to demo data.
 
-See [docs/provider-capability-matrix.md](docs/provider-capability-matrix.md) and [docs/limitations.md](docs/limitations.md).
+See [docs/how-it-works.md](docs/how-it-works.md) for the workflows, [docs/provider-capability-matrix.md](docs/provider-capability-matrix.md), and [docs/limitations.md](docs/limitations.md).
 
 ## Quick start (demo)
 

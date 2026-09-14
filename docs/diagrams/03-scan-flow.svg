@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 780" role="img" aria-labelledby="t d">
+  <title id="t">What happens when you run a scan</title>
+  <desc id="d">The browser starts a job and polls progress. The backend fetches catalysts, prices, and listings, then evaluates and saves.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="920" height="780" rx="12" fill="#f6f8fa"/>
+
+  <rect x="40" y="24" width="840" height="72" rx="10" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="460" y="52" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#0969da">You click Run scan</text>
+  <text x="460" y="74" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#0969da">Browser POSTs /api/scans, backend returns a job id, browser checks progress every 0.6 seconds</text>
+  <line x1="460" y1="96" x2="460" y2="120" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="124" width="56" height="72" rx="10" fill="#0969da"/>
+    <text x="68" y="166" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">1</text>
+    <rect x="108" y="124" width="772" height="72" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="128" y="154" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#1f2328">Work out dates and build API clients</text>
+    <text x="128" y="176" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Scan date, latest completed session, last 4 completed trading weeks. One HTTP client per provider.</text>
+  </g>
+  <line x1="68" y1="196" x2="68" y2="220" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="224" width="56" height="88" rx="10" fill="#8250df"/>
+    <text x="68" y="276" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">2</text>
+    <rect x="108" y="224" width="772" height="88" rx="10" fill="#fbefff" stroke="#8250df"/>
+    <text x="128" y="254" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">Fetch catalysts from BPIQ</text>
+    <text x="128" y="276" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">GET /catalysts/ page by page until there is no next page.</text>
+    <text x="128" y="296" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Then validate, normalize, drop duplicates, and group by ticker. If BPIQ fails, the scan stops.</text>
+  </g>
+  <line x1="68" y1="312" x2="68" y2="336" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="340" width="56" height="72" rx="10" fill="#8250df"/>
+    <text x="68" y="382" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">3</text>
+    <rect x="108" y="340" width="772" height="72" rx="10" fill="#fbefff" stroke="#8250df"/>
+    <text x="128" y="370" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">Fetch daily bars from Alpaca Market Data</text>
+    <text x="128" y="392" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">GET /v2/stocks/bars, 1-day SIP bars for every ticker. Used for price and liquidity.</text>
+  </g>
+  <line x1="68" y1="412" x2="68" y2="436" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="440" width="56" height="72" rx="10" fill="#8250df"/>
+    <text x="68" y="482" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">4</text>
+    <rect x="108" y="440" width="772" height="72" rx="10" fill="#fbefff" stroke="#8250df"/>
+    <text x="128" y="470" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#8250df">Look up listings on Alpaca Trading API</text>
+    <text x="128" y="492" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">GET /v2/assets/{symbol} for each ticker. Read-only: exchange and status. No orders.</text>
+  </g>
+  <line x1="68" y1="512" x2="68" y2="536" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="540" width="56" height="72" rx="10" fill="#9a6700"/>
+    <text x="68" y="582" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">5</text>
+    <rect x="108" y="540" width="772" height="72" rx="10" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="128" y="570" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#9a6700">Financials</text>
+    <text x="128" y="592" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Unavailable in live mode. Cash runway is reported as Unknown for every company.</text>
+  </g>
+  <line x1="68" y1="612" x2="68" y2="636" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="40" y="640" width="56" height="112" rx="10" fill="#1a7f37"/>
+    <text x="68" y="704" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">6</text>
+    <rect x="108" y="640" width="772" height="112" rx="10" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="128" y="670" font-family="Segoe UI, system-ui, sans-serif" font-size="15" font-weight="700" fill="#1a7f37">Evaluate every company, sort, and save</text>
+    <text x="128" y="692" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Apply the criteria, sort Qualifies, then Insufficient data, then Does not qualify, write SQLite.</text>
+    <text x="128" y="714" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Browser then loads GET /api/scans/{scan_id} and shows the full explanations.</text>
+    <text x="128" y="736" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#656d76">Only one scan at a time. A second click while one is running gets HTTP 409.</text>
+  </g>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 420" role="img" aria-labelledby="t d">
+  <title id="t">What happens when you open the app</title>
+  <desc id="d">The browser asks for status, then for the latest scans. The backend reads SQLite and the UI shows the last results.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
+    </marker>
+  </defs>
+  <rect width="920" height="420" rx="12" fill="#f6f8fa"/>
+
+  <text x="40" y="36" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#656d76">BROWSER</text>
+  <text x="360" y="36" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#656d76">BACKEND</text>
+  <text x="680" y="36" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#656d76">SQLITE</text>
+  <line x1="40" y1="48" x2="280" y2="48" stroke="#d0d7de"/>
+  <line x1="360" y1="48" x2="600" y2="48" stroke="#d0d7de"/>
+  <line x1="680" y1="48" x2="880" y2="48" stroke="#d0d7de"/>
+
+  <circle cx="70" cy="100" r="16" fill="#0969da"/>
+  <text x="70" y="105" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#ffffff">1</text>
+  <rect x="100" y="72" width="200" height="56" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="200" y="96" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#0969da">GET /api/status</text>
+  <text x="200" y="114" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#0969da">Ask how the app is set up</text>
+  <line x1="300" y1="100" x2="356" y2="100" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="72" width="240" height="56" rx="8" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="480" y="96" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Mode, dates, config</text>
+  <text x="480" y="114" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#656d76">No API keys in the reply</text>
+  <line x1="360" y1="128" x2="300" y2="148" stroke="#59636e" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="200" y="160" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#656d76">Reply goes back to the browser</text>
+
+  <circle cx="70" cy="220" r="16" fill="#0969da"/>
+  <text x="70" y="225" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#ffffff">2</text>
+  <rect x="100" y="192" width="200" height="56" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="200" y="216" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#0969da">GET /api/scans/latest</text>
+  <text x="200" y="234" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#0969da">Ask for the last scan</text>
+  <line x1="300" y1="220" x2="356" y2="220" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="192" width="240" height="56" rx="8" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="480" y="216" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Load stored scans</text>
+  <text x="480" y="234" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#656d76">Current mode only (live or demo)</text>
+  <line x1="600" y1="220" x2="676" y2="220" stroke="#59636e" stroke-width="1.75" marker-end="url(#arrow)"/>
+
+  <rect x="680" y="192" width="200" height="56" rx="28" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="780" y="216" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1a7f37">Latest scans</text>
+  <text x="780" y="234" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#1a7f37">Success + last attempt</text>
+  <line x1="680" y1="248" x2="600" y2="268" stroke="#59636e" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="360" y1="268" x2="300" y2="288" stroke="#59636e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <circle cx="70" cy="340" r="16" fill="#1a7f37"/>
+  <text x="70" y="345" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#ffffff">3</text>
+  <rect x="100" y="308" width="520" height="72" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="360" y="338" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" font-weight="700" fill="#1a7f37">The UI shows the last results</text>
+  <text x="360" y="360" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#1a7f37">Filters start from the last successful scan, or from defaults if there is none</text>
+</svg>

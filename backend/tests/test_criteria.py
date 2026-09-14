@@ -55,6 +55,7 @@ def passing_inputs(**overrides) -> CompanyInputs:
 
 
 def evaluate(inputs: CompanyInputs, **criteria):
+    criteria.setdefault("runway_enabled", True)
     ctx = ScanContext(today=SCAN_TODAY, criteria=ScanCriteria(**criteria), latest_session=LATEST, weeks=WEEKS)
     return evaluate_company(inputs, ctx)
 
@@ -67,6 +68,8 @@ def test_all_criteria_pass():
     result = evaluate(passing_inputs())
     assert result.eligibility is Eligibility.QUALIFIES
     assert {c.status for c in result.criteria} == {CriterionStatus.PASS}
+    assert result.price_bars
+    assert result.price_bars[-1].close == 10.0
 
 
 @pytest.mark.parametrize(("days", "expected"), [(59, "fail"), (60, "pass"), (75, "pass"), (90, "pass"), (91, "fail")])
