@@ -36,6 +36,20 @@ These are implemented deterministically and explained in the UI, but they were n
 5. **Price threshold** is strictly above $1.00, using the raw (unadjusted) close of the latest completed session. Older closes are never substituted.
 6. **Query range:** by default BPIQ is queried from today through the window end, so near-term catalysts appear as timing failures. Market cap is filtered locally by default, so failures are visible. Both are toggles under *Advanced query options*.
 
+## Research features (added 2026-09-14)
+
+1. **BPIQ MCP tools are unverified.** OAuth consent has not been completed, so no tool list, schema, or response has been inspected. Financial, insider, and fund panels show *Unknown / unavailable* until you connect, discover tools, and confirm a mapping. Even after that, normalized values are labelled *Unverified mapping* until the field names are checked against real responses and the code is updated.
+2. **Cash runway in live screening is still unavailable.** MCP financials are shown on the research page only. They do not feed the runway criterion.
+3. **Apex trial horizon:** watchlist refreshes see catalysts only within 30 days. Later events stay as last stored and are never marked "no longer returned".
+4. **Outcome matching is heuristic:** same drug name within 14 days, because BPIQ does not link upcoming and historical record ids.
+5. **Catalyst date precision is undocumented.** Exact dates and guided estimates cannot be distinguished. Ranges are supported by the model but not supplied by any connected source.
+6. **Monitoring is not continuous.** It runs only while the backend process is running, with one catch-up run after a missed schedule. There are no external notifications.
+7. **Paper tracking is forward-only.** It cannot validate the strategy historically. Overlapping trades are not modelled in drawdown. Fills use daily open/close bars, so there are no intraday stops.
+8. **Split-adjusted history can change** after a new split. Paper-trade entries are re-read from the same series at exit; stored price context is recalculated on each visit.
+9. **Provider storage terms were not reviewed.** Scan snapshots keep normalized BPIQ records and Alpaca bars locally.
+10. **AI cost is an estimate** based on the per-token prices you configure and the token usage OpenAI reports.
+11. **Only the documentation pages were rate-limited (429).** MCP details come from observed server metadata and a search result. Recheck https://app.bpiq.com/mcp-documentation manually.
+
 ## Operational notes
 
 - The exchange calendar is the local `exchange_calendars` XNYS calendar. Keep the package updated so newly announced holidays are reflected.

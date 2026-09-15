@@ -64,6 +64,39 @@ class BpiqCatalystRecord(_BpiqModel):
     is_high_mgmt_interest: StrictBool | None = None
 
 
+class BpiqHistoricalCompany(_BpiqModel):
+    id: StrictInt | None = None
+    ticker: StrictStr | None = None
+    name: StrictStr | None = None
+
+
+class BpiqHistoricalCatalystRecord(_BpiqModel):
+    """One element of `results[]` from GET /api/v1/info/historical-catalysts/.
+
+    Field names and JSON types verified against an authenticated Apex trial response on 2026-09-14.
+    Nullability is not documented, so every field except `id` is optional.
+    """
+
+    id: StrictInt
+    company: BpiqHistoricalCompany | None = None
+    created_at: StrictStr | None = None
+    updated_at: StrictStr | None = None
+    ticker: StrictStr | None = None
+    drug_name: StrictStr | None = None
+    drug_indication: StrictStr | None = None
+    airtable_id: StrictInt | None = None
+    stage: StrictStr | None = None
+    catalyst_date: StrictStr | None = None
+    catalyst_source: StrictStr | None = None
+    catalyst_text: StrictStr | None = None
+    detailed_catalyst_text: StrictStr | None = None
+    catalyst_text_evidence: StrictStr | None = None
+    news_published_at: StrictStr | None = None
+    # Decimal strings, e.g. "0.02826". Units (fraction vs percent) are not documented.
+    open_price_gap_percent: StrictStr | None = None
+    intra_day_price_change_percent: StrictStr | None = None
+
+
 class BpiqPaginatedEnvelope(_BpiqModel):
     count: StrictInt
     next: StrictStr | None

@@ -12,11 +12,14 @@ from urllib.parse import urlsplit
 
 from app.config import BPIQ_TRIAL_HORIZON_DAYS, BpiqAccessTier
 from app.domain.models import Catalyst, CompanyProfile
+from app.domain.research import OutcomeRecord
 from app.providers.bpiq.normalize import (
     PROVIDER,
     RejectedRecord,
     normalize_catalyst,
+    normalize_historical,
     parse_catalyst_envelope,
+    provider_flags,
 )
 from app.providers.errors import ErrorKind, ProviderError
 from app.logging_setup import get_logger
@@ -25,6 +28,8 @@ from app.providers.http import ProviderHttpClient
 log = get_logger("bpiq")
 
 MAX_PAGES = 200
+# Historical context for one company; older records beyond this are reported as truncated.
+MAX_HISTORICAL_PAGES = 10
 
 BPIQ_HINTS = {
     ErrorKind.AUTH: "Check BPIQ_API_KEY in .env (sent as 'Authorization: Token <key>').",
@@ -52,10 +57,21 @@ class CatalystFetchResult:
     reported_count: int | None = None
     received_records: int = 0
     label_inventory: Counter[tuple[str | None, str | None]] = field(default_factory=Counter)
+    flags: dict[str, dict[str, bool | None]] = field(default_factory=dict)
 
     @property
     def complete(self) -> bool:
         return self.reported_count is None or self.received_records >= self.reported_count
+
+
+@dataclass
+class HistoricalFetchResult:
+    retrieved_at: datetime
+    outcomes: list[OutcomeRecord] = field(default_factory=list)
+    rejected: list[RejectedRecord] = field(default_factory=list)
+    pages: int = 0
+    reported_count: int | None = None
+    truncated: bool = False
 
 
 class BpiqClient:
@@ -165,6 +181,97 @@ class BpiqClient:
             url = self._validated_next(envelope.next)
             request_params = None
 
+        return result
+
+    async def fetch_catalysts_for_ticker(self, *, ticker: str, today: date) -> CatalystFetchResult:
+        """All upcoming catalysts for one ticker, including undated ones (watchlist tracking).
+
+        `ticker` filtering verified against an authenticated response on 2026-09-14. On Apex trial the
+        query is limited to the documented 30-day horizon; `covered_until` tells callers how far it reaches.
+        """
+        params: dict[str, str] = {"limit": str(self._page_size), "offset": "0", "ticker": ticker}
+        if self._tier is BpiqAccessTier.APEX_TRIAL:
+            params["catalyst_date_max"] = self.covered_until(today).isoformat()  # type: ignore[union-attr]
+        return await self._paginate_catalysts(params, include_undated=True, ticker=ticker)
+
+    def covered_until(self, today: date) -> date | None:
+        if self._tier is BpiqAccessTier.APEX_TRIAL:
+            return date.fromordinal(today.toordinal() + BPIQ_TRIAL_HORIZON_DAYS)
+        return None
+
+    async def fetch_historical_for_ticker(self, *, ticker: str) -> HistoricalFetchResult:
+        params: dict[str, str] = {"limit": str(self._page_size), "offset": "0", "ticker": ticker}
+        result = HistoricalFetchResult(retrieved_at=self._clock())
+        url: str | None = f"{self._base_url}/historical-catalysts/"
+        request_params: dict[str, str] | None = params
+        seen: set[str] = set()
+        while url is not None:
+            if result.pages >= MAX_HISTORICAL_PAGES:
+                result.truncated = True
+                break
+            key = url + repr(sorted((request_params or {}).items()))
+            if key in seen:
+                raise ProviderError(PROVIDER, ErrorKind.INVALID_RESPONSE, "Pagination loop: `next` repeated a page.")
+            seen.add(key)
+            envelope = parse_catalyst_envelope(await self._http.get_json(url, request_params))
+            result.pages += 1
+            result.reported_count = envelope.count if result.reported_count is None else result.reported_count
+            for raw in envelope.results:
+                normalized = normalize_historical(raw, result.retrieved_at)
+                if isinstance(normalized, RejectedRecord):
+                    result.rejected.append(normalized)
+                    continue
+                raw_ticker = (raw.get("ticker") or (raw.get("company") or {}).get("ticker") or "").strip().upper()
+                if raw_ticker != ticker:
+                    result.rejected.append(RejectedRecord(normalized.provider_record_id, f"ticker {raw_ticker!r} does not match {ticker}"))
+                    continue
+                result.outcomes.append(normalized)
+            url = self._validated_next(envelope.next)
+            request_params = None
+        return result
+
+    async def _paginate_catalysts(
+        self, params: dict[str, str], *, include_undated: bool, ticker: str | None = None
+    ) -> CatalystFetchResult:
+        result = CatalystFetchResult(retrieved_at=self._clock(), query=dict(params))
+        seen_ids: set[int] = set()
+        seen_pages: set[str] = set()
+        url: str | None = f"{self._base_url}/catalysts/"
+        request_params: dict[str, str] | None = params
+        while url is not None:
+            if result.pages >= MAX_PAGES:
+                raise ProviderError(PROVIDER, ErrorKind.INVALID_RESPONSE, f"Pagination exceeded {MAX_PAGES} pages; stopping.")
+            page_key = url + "?" + "&".join(f"{k}={v}" for k, v in sorted((request_params or {}).items()))
+            if page_key in seen_pages:
+                raise ProviderError(PROVIDER, ErrorKind.INVALID_RESPONSE, "Pagination loop: `next` repeated a page.")
+            seen_pages.add(page_key)
+            envelope = parse_catalyst_envelope(await self._http.get_json(url, request_params))
+            result.pages += 1
+            if result.reported_count is None:
+                result.reported_count = envelope.count
+            for raw in envelope.results:
+                result.received_records += 1
+                normalized = normalize_catalyst(raw, result.retrieved_at)
+                if isinstance(normalized, RejectedRecord):
+                    result.rejected.append(normalized)
+                    continue
+                catalyst = normalized.catalyst
+                if ticker is not None and catalyst.ticker != ticker:
+                    result.rejected.append(RejectedRecord(catalyst.provider_record_id, f"ticker {catalyst.ticker} does not match {ticker}"))
+                    continue
+                if catalyst.provider_record_id in seen_ids:
+                    result.duplicates += 1
+                    continue
+                seen_ids.add(catalyst.provider_record_id)
+                result.label_inventory[(catalyst.stage_label, catalyst.event_label)] += 1
+                if catalyst.catalyst_date is None and not include_undated:
+                    result.undated_excluded += 1
+                    continue
+                result.catalysts.append(catalyst)
+                result.flags[catalyst.event_id] = provider_flags(raw)
+                result.companies.setdefault(catalyst.ticker, normalized.company)
+            url = self._validated_next(envelope.next)
+            request_params = None
         return result
 
     def _validated_next(self, next_url: str | None) -> str | None:

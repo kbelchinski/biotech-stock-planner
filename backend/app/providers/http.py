@@ -97,6 +97,27 @@ class ProviderHttpClient:
         await self._client.aclose()
 
     async def get_json(self, url: str, params: Mapping[str, Any] | None = None) -> Any:
+        response = await self.send("GET", url, params=params)
+        try:
+            return response.json()
+        except ValueError:
+            log.error("%s GET %s -> %s was not JSON", self.provider, format_url(url, None), response.status_code)
+            raise self._error(
+                ErrorKind.INVALID_RESPONSE,
+                "Provider returned a response that is not valid JSON.",
+                status_code=response.status_code,
+            ) from None
+
+    async def send(
+        self,
+        method: str,
+        url: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json: Any = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> httpx.Response:
+        """Rate-limited request with bounded retries. Returns a successful (<400) response or raises."""
         target = format_url(url, dict(params) if params else None)
         attempt = 0
         while True:
@@ -109,16 +130,17 @@ class ProviderHttpClient:
             self.request_count += 1
             started = time.monotonic()
             try:
-                response = await self._client.get(url, params=params)
+                response = await self._client.request(method, url, params=params, json=json, headers=headers)
             except httpx.TimeoutException:
                 elapsed_ms = (time.monotonic() - started) * 1000
-                log.warning("%s GET %s timed out after %.0fms (attempt %d)", self.provider, target, elapsed_ms, attempt + 1)
+                log.warning("%s %s %s timed out after %.0fms (attempt %d)", self.provider, method, target, elapsed_ms, attempt + 1)
                 error = self._error(ErrorKind.TIMEOUT, "Request timed out.", retryable=True)
             except httpx.TransportError as exc:
                 elapsed_ms = (time.monotonic() - started) * 1000
                 log.warning(
-                    "%s GET %s transport %s after %.0fms (attempt %d)",
+                    "%s %s %s transport %s after %.0fms (attempt %d)",
                     self.provider,
+                    method,
                     target,
                     type(exc).__name__,
                     elapsed_ms,
@@ -132,19 +154,12 @@ class ProviderHttpClient:
             else:
                 elapsed_ms = (time.monotonic() - started) * 1000
                 if response.status_code < 400:
-                    log.info("%s GET %s -> %s in %.0fms", self.provider, target, response.status_code, elapsed_ms)
-                    try:
-                        return response.json()
-                    except ValueError:
-                        log.error("%s GET %s -> %s was not JSON", self.provider, target, response.status_code)
-                        raise self._error(
-                            ErrorKind.INVALID_RESPONSE,
-                            "Provider returned a response that is not valid JSON.",
-                            status_code=response.status_code,
-                        ) from None
+                    log.info("%s %s %s -> %s in %.0fms", self.provider, method, target, response.status_code, elapsed_ms)
+                    return response
                 log.warning(
-                    "%s GET %s -> %s in %.0fms (attempt %d)",
+                    "%s %s %s -> %s in %.0fms (attempt %d)",
                     self.provider,
+                    method,
                     target,
                     response.status_code,
                     elapsed_ms,
@@ -225,6 +240,11 @@ def _error_detail(response: httpx.Response) -> str | None:
             value = body.get(key)
             if isinstance(value, str) and value.strip():
                 return value.strip()[:MAX_ERROR_DETAIL_CHARS]
+        # OpenAI-style nested errors: {"error": {"message": "...", "code": "..."}}
+        nested = body.get("error")
+        if isinstance(nested, dict) and isinstance(nested.get("message"), str) and nested["message"].strip():
+            code = nested.get("code")
+            return (nested["message"].strip() + (f" ({code})" if isinstance(code, str) else ""))[:MAX_ERROR_DETAIL_CHARS]
     return None
 
 

@@ -1,0 +1,62 @@
+{
+  "_fixture": "SYNTHETIC BPIQ /api/v1/info/historical-catalysts/ results[] records. Field names and JSON types mirror an authenticated Apex response inspected 2026-09-14. Fictional companies. {{today±N}} tokens render to YYYY-MM-DD (optionally followed by a time suffix).",
+  "records": [
+    {
+      "id": 9101,
+      "company": { "id": 701, "ticker": "AURX", "name": "Auralis Therapeutics Inc." },
+      "created_at": "{{today-238}}T13:01:45.790833Z",
+      "updated_at": "{{today-237}}T13:01:47.283637Z",
+      "ticker": "AURX",
+      "drug_name": "ARX-301",
+      "drug_indication": "Generalized myasthenia gravis",
+      "airtable_id": 18001,
+      "stage": "Phase 2",
+      "catalyst_date": "{{today-240}}",
+      "catalyst_source": "https://www.example.com/demo/aurx-phase2-results",
+      "catalyst_text": "Phase 2 met primary endpoint",
+      "detailed_catalyst_text": "Synthetic demo record: the Phase 2 study reported a statistically significant change on the primary endpoint.",
+      "catalyst_text_evidence": "Synthetic demo evidence text.",
+      "news_published_at": "{{today-240}}T00:00:00Z",
+      "open_price_gap_percent": "0.18420",
+      "intra_day_price_change_percent": "-0.04210"
+    },
+    {
+      "id": 9102,
+      "company": { "id": 702, "ticker": "BRVN", "name": "Brevian Bio Inc." },
+      "created_at": "{{today-60}}T13:05:36.193147Z",
+      "updated_at": "{{today-59}}T13:05:49.364765Z",
+      "ticker": "BRVN",
+      "drug_name": "Velostrin",
+      "drug_indication": "Primary biliary cholangitis",
+      "airtable_id": 18002,
+      "stage": "NDA Filing",
+      "catalyst_date": "{{today-61}}",
+      "catalyst_source": "https://www.example.com/demo/brvn-nda-acceptance",
+      "catalyst_text": "NDA accepted for standard review",
+      "detailed_catalyst_text": "Synthetic demo record: the FDA accepted the NDA and assigned a PDUFA goal date.",
+      "catalyst_text_evidence": "Synthetic demo evidence text.",
+      "news_published_at": "{{today-61}}T00:00:00Z",
+      "open_price_gap_percent": "0.02100",
+      "intra_day_price_change_percent": "0.01300"
+    },
+    {
+      "id": 9103,
+      "company": { "id": 703, "ticker": "TRLM", "name": "Trilam Pharma Inc." },
+      "created_at": "{{today-150}}T13:00:00.000000Z",
+      "updated_at": "{{today-149}}T13:00:00.000000Z",
+      "ticker": "TRLM",
+      "drug_name": "Trilafenib",
+      "drug_indication": "Demo indication",
+      "airtable_id": 18003,
+      "stage": "Phase 3",
+      "catalyst_date": "{{today-152}}",
+      "catalyst_source": null,
+      "catalyst_text": "Phase 3 topline data reported",
+      "detailed_catalyst_text": "Synthetic demo record without a source link.",
+      "catalyst_text_evidence": null,
+      "news_published_at": "{{today-152}}T00:00:00Z",
+      "open_price_gap_percent": null,
+      "intra_day_price_change_percent": null
+    }
+  ]
+}

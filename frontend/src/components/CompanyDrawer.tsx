@@ -1,19 +1,22 @@
 import { useEffect, useRef } from "react";
-import { ExternalLink, FlaskConical, X } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, FlaskConical, Microscope, X } from "lucide-react";
 import { PriceChart } from "./PriceChart";
 import { CriterionBadge, EligibilityBadge } from "./StatusBadge";
 import { catalystLabel, dateTime, shortDate, usd } from "../format";
+import { href } from "../router";
 import type { CatalystEvaluation, CompanyResult, CriterionResult, ScanRun, SourceRef } from "../types";
 
 interface Props {
   result: CompanyResult;
   run: ScanRun;
   onClose: () => void;
+  watched?: boolean;
+  onToggleWatch?: () => void;
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export function CompanyDrawer({ result, run, onClose }: Props) {
+export function CompanyDrawer({ result, run, onClose, watched = false, onToggleWatch }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -83,6 +86,17 @@ export function CompanyDrawer({ result, run, onClose }: Props) {
               {result.eligibility === "insufficient_data" && "No enabled criterion fails, but at least one is unknown."}
             </span>
           </div>
+          <div className="drawer-actions">
+            <a className="btn btn-secondary btn-sm" href={href("research", result.ticker)} onClick={onClose}>
+              <Microscope aria-hidden size={14} /> Open research page
+            </a>
+            {onToggleWatch && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={onToggleWatch} aria-pressed={watched}>
+                {watched ? <EyeOff aria-hidden size={14} /> : <Eye aria-hidden size={14} />}
+                {watched ? "Watching · stop" : "Watch"}
+              </button>
+            )}
+          </div>
           {notApplied.length > 0 && (
             <p className="callout callout-warn">
               Not applied in this scan: {notApplied.map((c) => c.label).join(", ")}. The result does not cover these criteria.
@@ -124,7 +138,7 @@ export function CompanyDrawer({ result, run, onClose }: Props) {
   );
 }
 
-function CriterionCard({ criterion }: { criterion: CriterionResult }) {
+export function CriterionCard({ criterion }: { criterion: CriterionResult }) {
   const weeks = criterion.details.weeks;
   return (
     <article className={`criterion criterion-${criterion.status}`}>

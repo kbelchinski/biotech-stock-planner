@@ -17,6 +17,7 @@
     "ZEPH": { "price": 8.8, "avg_weekly_turnover_usd": 5000000 },
     "RDGE": { "price": 31.2, "avg_weekly_turnover_usd": 12000000, "no_vwap_session_offsets": [2, 5, 9] },
     "TRLM": { "price": 24.5, "avg_weekly_turnover_usd": 6000000, "missing_session_offsets": [1, 6] },
-    "SPY": { "price": 612.4, "avg_weekly_turnover_usd": 150000000000 }
+    "SPY": { "price": 612.4, "avg_weekly_turnover_usd": 150000000000 },
+    "XBI": { "price": 98.6, "avg_weekly_turnover_usd": 4500000000 }
   }
 }

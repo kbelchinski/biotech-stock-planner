@@ -289,3 +289,9 @@ class ScanRun(BaseModel):
     not_applied_criteria: list[CriterionKey] = Field(default_factory=list)
     notices: list[str] = Field(default_factory=list)
     demo_scenario: str | None = None
+    # Identifies the screening-rule implementation that produced the eligibility decisions.
+    rule_version: str = "unversioned (saved before 2026-09-14)"
+
+
+# Bump when criteria logic, thresholds semantics, or classification rules change.
+SCREENING_RULE_VERSION = "2026-09-14.1"

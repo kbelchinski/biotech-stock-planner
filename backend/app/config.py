@@ -63,8 +63,41 @@ class Settings(BaseSettings):
     http_max_retries: int = 3
 
     database_path: Path = BACKEND_ROOT / "data" / "scans.sqlite3"
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174"
     log_level: str = "INFO"
+
+    # --- Monitoring (runs only while this backend process is running) ---
+    monitor_enabled: bool = True
+
+    # --- BPIQ MCP (optional). Custom apps authenticate with BPIQ_API_KEY (Authorization: Token). ---
+    bpiq_mcp_url: str | None = None
+    # Where the browser reaches this backend (OAuth redirect) and the UI (post-consent redirect).
+    public_base_url: str = "http://127.0.0.1:8000"
+    ui_base_url: str = "http://localhost:5173"
+    bpiq_mcp_rate_limit_per_min: int = 10
+
+    # --- Optional OpenAI "Explain and challenge" (manual trigger only) ---
+    openai_api_key: SecretStr | None = None
+    openai_model: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    # Prices are required to enforce the budget; calls are refused without them.
+    openai_input_usd_per_1m_tokens: float | None = None
+    openai_output_usd_per_1m_tokens: float | None = None
+    ai_monthly_budget_usd: float = 5.0
+    ai_max_output_tokens: int = 1500
+    # "Ask" (free-form question over company data + optional web search)
+    ai_ask_max_output_tokens: int = 2500
+    # Web search is billed per call by OpenAI; set the price to enable web research in Ask.
+    openai_web_search_usd_per_call: float | None = None
+    ai_ask_max_searches: int = 3
+
+    @property
+    def data_dir(self) -> Path:
+        return self.database_path.parent
+
+    @property
+    def openai_configured(self) -> bool:
+        return bool(self.openai_api_key and self.openai_api_key.get_secret_value().strip() and self.openai_model)
 
     @property
     def alpaca_trading_base_url(self) -> str:

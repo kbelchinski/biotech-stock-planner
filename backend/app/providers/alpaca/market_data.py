@@ -25,6 +25,8 @@ MAX_PAGES_PER_CHUNK = 500
 # Raw prices and raw volumes are mutually consistent for dollar turnover (volume × VWAP) and
 # give the actual traded close for the price filter.
 ADJUSTMENT = "raw"
+# split: used only for price-context metrics (returns, averages, volume ratios across splits).
+SUPPORTED_ADJUSTMENTS = frozenset({"raw", "split"})
 
 ALPACA_HINTS = {
     ErrorKind.AUTH: "Check ALPACA_API_KEY_ID and ALPACA_API_SECRET_KEY in .env.",
@@ -64,29 +66,37 @@ class AlpacaMarketDataClient:
         self.feed = feed
         self._clock = clock
 
-    async def fetch_daily_bars(self, symbols: list[str], start: date, end: date) -> BarsFetchResult:
+    async def fetch_daily_bars(
+        self, symbols: list[str], start: date, end: date, *, adjustment: str = ADJUSTMENT
+    ) -> BarsFetchResult:
+        """`adjustment` is raw for screening (default) or split for price-context metrics."""
+        if adjustment not in SUPPORTED_ADJUSTMENTS:
+            raise ValueError(f"Unsupported adjustment {adjustment!r}")
         unique = sorted({s.strip().upper() for s in symbols if s.strip()})
         result = BarsFetchResult(retrieved_at=self._clock(), feed=self.feed)
         collected: dict[str, dict[date, DailyBar]] = {s: {} for s in unique}
-        log.info("Alpaca bars: %s symbols %s to %s feed=%s", len(unique), start.isoformat(), end.isoformat(), self.feed)
+        log.info(
+            "Alpaca bars: %s symbols %s to %s feed=%s adjustment=%s",
+            len(unique), start.isoformat(), end.isoformat(), self.feed, adjustment,
+        )
 
         for offset in range(0, len(unique), SYMBOLS_PER_REQUEST):
             chunk = unique[offset : offset + SYMBOLS_PER_REQUEST]
             log.info("Alpaca bars chunk %s-%s (%s symbols)", offset + 1, offset + len(chunk), len(chunk))
-            await self._fetch_chunk(chunk, start, end, collected, result)
+            await self._fetch_chunk(chunk, start, end, collected, result, adjustment)
 
         for symbol in unique:
             bars = sorted(collected[symbol].values(), key=lambda b: b.session_date)
             result.histories[symbol] = PriceHistory(
                 ticker=symbol,
                 feed=self.feed,
-                adjustment=ADJUSTMENT,
+                adjustment=adjustment,
                 requested_start=start,
                 requested_end=end,
                 bars=bars,
                 source=SourceRef(
                     provider=f"{MARKET_DATA_PROVIDER} ({self.feed.upper()})",
-                    endpoint=f"{BARS_ENDPOINT} · timeframe=1Day · adjustment={ADJUSTMENT} · feed={self.feed}",
+                    endpoint=f"{BARS_ENDPOINT} · timeframe=1Day · adjustment={adjustment} · feed={self.feed}",
                     retrieved_at=result.retrieved_at,
                     source_timestamp=bars[-1].timestamp.isoformat() if bars else None,
                 ),
@@ -100,6 +110,7 @@ class AlpacaMarketDataClient:
         end: date,
         collected: dict[str, dict[date, DailyBar]],
         result: BarsFetchResult,
+        adjustment: str,
     ) -> None:
         wanted = set(chunk)
         token: str | None = None
@@ -111,7 +122,7 @@ class AlpacaMarketDataClient:
                 "start": start.isoformat(),
                 "end": end.isoformat(),
                 "limit": str(BARS_PAGE_LIMIT),
-                "adjustment": ADJUSTMENT,
+                "adjustment": adjustment,
                 "feed": self.feed,
                 "sort": "asc",
             }

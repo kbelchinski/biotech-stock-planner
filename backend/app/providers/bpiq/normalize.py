@@ -10,7 +10,8 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.domain.models import Catalyst, CompanyProfile, SourceRef
-from app.providers.bpiq.schemas import BpiqCatalystRecord, BpiqPaginatedEnvelope
+from app.domain.research import OutcomeRecord
+from app.providers.bpiq.schemas import BpiqCatalystRecord, BpiqHistoricalCatalystRecord, BpiqPaginatedEnvelope
 from app.providers.errors import ErrorKind, ProviderError
 from app.screening.catalyst_classification import classify
 
@@ -126,6 +127,63 @@ def normalize_catalyst(raw: Any, retrieved_at: datetime) -> NormalizedCatalyst |
         ),
     )
     return NormalizedCatalyst(catalyst, profile)
+
+
+HISTORICAL_ENDPOINT = "GET /api/v1/info/historical-catalysts/"
+FLAG_KEYS = ("is_big_mover", "is_suspected_mover", "is_hedge_fund_pick", "is_hedge_fund_avoid", "is_high_mgmt_interest")
+
+
+def provider_flags(raw: Any) -> dict[str, bool | None]:
+    """Provider flags exactly as returned (true/false/absent). Never interpreted as holdings."""
+    if not isinstance(raw, dict):
+        return {}
+    return {k: raw.get(k) if isinstance(raw.get(k), bool) else None for k in FLAG_KEYS}
+
+
+def normalize_historical(raw: Any, retrieved_at: datetime) -> OutcomeRecord | RejectedRecord:
+    record_id = raw.get("id") if isinstance(raw, dict) else None
+    try:
+        record = BpiqHistoricalCatalystRecord.model_validate(raw)
+    except ValidationError as exc:
+        return RejectedRecord(record_id, f"Schema validation failed: {summarize_validation_error(exc)}")
+    catalyst_date: date | None = None
+    if record.catalyst_date is not None:
+        if not _ISO_DATE.match(record.catalyst_date):
+            return RejectedRecord(record.id, f"catalyst_date {record.catalyst_date!r} is not YYYY-MM-DD")
+        try:
+            catalyst_date = date.fromisoformat(record.catalyst_date)
+        except ValueError:
+            return RejectedRecord(record.id, f"catalyst_date {record.catalyst_date!r} is not a valid date")
+    return OutcomeRecord(
+        provider_record_id=record.id,
+        catalyst_date=catalyst_date,
+        stage=record.stage,
+        drug_name=record.drug_name,
+        text=record.catalyst_text,
+        detailed_text=record.detailed_catalyst_text,
+        source_url=_http_url(record.catalyst_source),
+        news_published_at=record.news_published_at,
+        open_price_gap_percent=_decimal(record.open_price_gap_percent),
+        intra_day_price_change_percent=_decimal(record.intra_day_price_change_percent),
+        provider_created_at=record.created_at,
+        provider_updated_at=record.updated_at,
+        match_basis="",
+        source=SourceRef(
+            provider=PROVIDER,
+            endpoint=HISTORICAL_ENDPOINT,
+            retrieved_at=retrieved_at,
+            source_timestamp=record.updated_at,
+            timestamp_note="Provider updated_at of the historical record.",
+            url=_http_url(record.catalyst_source),
+        ),
+    )
+
+
+def _decimal(value: str | None) -> float | None:
+    try:
+        return float(value) if value is not None else None
+    except ValueError:
+        return None
 
 
 def _clean_ticker(value: str | None) -> str | None:

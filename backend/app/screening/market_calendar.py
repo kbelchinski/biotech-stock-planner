@@ -43,8 +43,28 @@ class MarketCalendar:
             return []
         return [ts.date() for ts in self._cal.sessions_in_range(pd.Timestamp(first), pd.Timestamp(last))]
 
+    def sessions_before(self, day: date, n: int) -> date | None:
+        """The n-th session strictly before `day` (n=1: previous session). n=0 returns `day`.
+
+        None when the calendar does not cover the range (exchange_calendars publishes about a year ahead).
+        """
+        if n <= 0:
+            return day
+        if day - timedelta(days=1) > self._cal.last_session.date():
+            return None
+        found = self.sessions_between(day - timedelta(days=n * 2 + 14), day - timedelta(days=1))
+        return found[-n] if len(found) >= n else None
+
+    def next_session(self, day: date) -> date | None:
+        """First session strictly after `day`."""
+        found = self.sessions_between(day + timedelta(days=1), day + timedelta(days=14))
+        return found[0] if found else None
+
     def is_session(self, day: date) -> bool:
         return bool(self._cal.is_session(pd.Timestamp(day)))
+
+    def session_open(self, session: date) -> datetime:
+        return self._cal.session_open(pd.Timestamp(session)).to_pydatetime().astimezone(NEW_YORK)
 
     def session_close(self, session: date) -> datetime:
         return self._cal.session_close(pd.Timestamp(session)).to_pydatetime().astimezone(NEW_YORK)

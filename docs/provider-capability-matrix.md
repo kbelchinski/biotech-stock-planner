@@ -17,7 +17,17 @@ Reviewed 2026-09-13 against:
 | **Unverified-live** | No authenticated request has succeeded yet. This applies to every row below until `python -m app.diagnostics` passes with real credentials. |
 | **Unavailable** | The field is not available under the configured plan. |
 
-No authenticated request has been made. Every live capability below is therefore **unverified-live**.
+Update 2026-09-14: read-only authenticated BPIQ REST requests were made with the configured Apex **trial** key (see "Verified 2026-09-14" below). The official BPIQ documentation pages returned HTTP 429 to automated fetches on that date, so they could not be re-read. Rows not listed as verified remain **unverified-live**. No authenticated Alpaca request has been made.
+
+## Verified 2026-09-14 (authenticated, read-only)
+
+| Capability | Endpoint | Observation | Status |
+| --- | --- | --- | --- |
+| Catalysts field set | BPIQ `GET /api/v1/info/catalysts/` | Keys and JSON types match `BpiqCatalystRecord`; `company.market_cap` integer; `catalyst_date` string. `count` was 60 for the next 30 days. | **Verified (trial)** |
+| Ticker filter | BPIQ `/catalysts/?ticker=…` | All returned records matched the ticker. | **Verified (trial)** |
+| Historical catalysts | BPIQ `GET /api/v1/info/historical-catalysts/` | Accessible on Apex trial. Keys include `id, company{id,ticker,name}, created_at, updated_at, ticker, drug_name, drug_indication, airtable_id, stage, catalyst_date, catalyst_source, catalyst_text, detailed_catalyst_text, catalyst_text_evidence, news_published_at, open_price_gap_percent, intra_day_price_change_percent` (the last two are decimal strings; units not documented). The `ticker` filter works. There is no id link to upcoming records. | **Verified (trial)**. Paid-plan behaviour not checked. |
+| BPIQ MCP authentication | `https://bpiq-marketcompass-mcp-production.up.railway.app/mcp` (endpoint found via search result, not the docs page) | `401` with `WWW-Authenticate: Bearer … resource_metadata`. The REST key is rejected (`Token` and `Bearer`). Metadata lists OAuth authorize, token, and registration endpoints and scope `biopharmiq.read`. | **Observed**. Tools and schemas are **not yet verified** (they need OAuth consent). |
+| Alpaca `adjustment=split` | Alpaca bars | Documented enum value. Used only for price-context metrics and paper fills. | Documented; unverified-live |
 
 ## Required fields
 

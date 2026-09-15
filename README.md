@@ -5,7 +5,20 @@ A single-user web app that screens US-listed biotech equities for upcoming **Pha
 - **Demo mode** works immediately with no API keys. It runs synthetic responses in the documented BPIQ and Alpaca schemas through the same pipeline as live data.
 - **Live mode** uses BPIQ Apex REST (catalysts) and Alpaca (historical SIP daily bars and asset listing) once credentials are configured. It never falls back to demo data.
 
-See [docs/how-it-works.md](docs/how-it-works.md) for the workflows, [docs/provider-capability-matrix.md](docs/provider-capability-matrix.md), and [docs/limitations.md](docs/limitations.md).
+See [docs/how-to-run.md](docs/how-to-run.md) to install Git, Python, and Node and start the app. See [docs/how-it-works.md](docs/how-it-works.md) for the workflows, [docs/research-features.md](docs/research-features.md) for the research tools and every formula, [docs/provider-capability-matrix.md](docs/provider-capability-matrix.md), and [docs/limitations.md](docs/limitations.md).
+
+## Research and decision support
+
+Beyond the screener, the app includes:
+
+- **Watchlist** that tracks companies independently of eligibility, with the complete catalyst timeline, date revisions (previous → current), events no longer returned, possible reported outcomes, and an in-app notification feed.
+- **Reminders** (default 14 and 3 calendar days; trading-session offsets supported) and a **daily refresh** that runs only while the backend is running, with one catch-up run on the next start.
+- **Company research page** answering: what could move the stock, how certain the timing is, whether it meets your rules, whether price and volume have already moved, documented financial risks, contradicting evidence, and missing information. Includes changes since your last saved analysis.
+- **Price and volume context** (returns, benchmark-relative vs XBI, volume ratio, volatility, gaps, highs, moving averages) with documented formulas. These are context only, never filters.
+- **Trade-plan calculator**, plus separate planned, hypothetical and actual records. There are no order endpoints.
+- **Forward paper tracking**, a decision journal, and performance per group. Immutable scan snapshots record the rule version.
+- **Optional BPIQ MCP** (OAuth consent, tool discovery, confirmed tool mapping) for financials, insider and fund data.
+- **Optional OpenAI critique** with a monthly budget, citing only deterministic evidence.
 
 ## Quick start (demo)
 
@@ -141,7 +154,21 @@ The tests cover:
 - Failure scenarios end to end.
 - That live mode never contains mock values.
 - That API responses and CSV exports never contain credentials.
+- Catalyst revisions, "no longer returned" rules (including the trial horizon), and calendar vs trading-day reminders.
+- Watched companies stay tracked outside the discovery window, and failed refreshes keep stored data.
+- Price-context formulas across holidays, with missing bars, insufficient history, and stale data.
+- Trade-plan sizing and invalid inputs.
+- Paper-trade look-ahead prevention, missing prices, catalyst revisions, and performance kept separate per group.
+- MCP OAuth (PKCE, refresh), discovery over SSE, confirmation before tool calls, and conservative normalizers.
+- AI budget enforcement and removal of uncited or forbidden output.
+- Immutable scan snapshots, and that no order routes exist.
+
+### Optional integrations
+
+- **BPIQ MCP:** set `BPIQ_MCP_URL` (see `.env.example`), restart, then open **Data & integrations** → **Connect**. Approve in BPIQ, run **Discover tools**, test a tool, and confirm which tool serves each capability. Without MCP, those panels show *Unknown / unavailable from connected sources*.
+- **OpenAI critique:** set `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_INPUT_USD_PER_1M_TOKENS`, and `OPENAI_OUTPUT_USD_PER_1M_TOKENS`. The default budget is `AI_MONTHLY_BUDGET_USD=5`. Calls are refused when prices are missing or the budget would be exceeded.
+- **Monitoring:** `MONITOR_ENABLED=true` by default. It does nothing while the backend is stopped.
 
 ## Scope
 
-This version has no authentication, MCP, streaming, alerts, portfolio tracking, trade execution, or AI recommendations. It is meant to run on localhost. Do not deploy it publicly without adding access control.
+This version has no authentication, streaming, external notifications (email or Telegram), trade execution, ranking algorithm, or AI recommendations. It is meant to run on localhost. Do not deploy it publicly without adding access control: OAuth tokens and research data are stored locally in `backend/data/`.

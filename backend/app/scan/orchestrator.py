@@ -14,6 +14,7 @@ from datetime import UTC, date, datetime, timedelta
 from app.config import AppMode, Settings
 from app.domain.models import (
     LIQUIDITY_WEEKS,
+    SCREENING_RULE_VERSION,
     ClassificationStatus,
     CompanyResult,
     CriterionKey,
@@ -146,6 +147,10 @@ class ScanOrchestrator:
             await bundle.aclose()
 
     def _build_providers(self, mode: DataMode, today: date, scenario: DemoScenario | None) -> ProviderBundle:
+        return self.build_providers(mode, today, scenario)
+
+    def build_providers(self, mode: DataMode, today: date, scenario: DemoScenario | None) -> ProviderBundle:
+        """Provider bundle for the current mode; raises ConfigurationError when live credentials are missing."""
         if self._provider_factory is not None:
             return self._provider_factory(mode=mode, today=today, scenario=scenario)
         if mode is DataMode.LIVE:
@@ -383,6 +388,7 @@ class ScanOrchestrator:
             not_applied_criteria=[k for k, on in enabled.items() if not on and k is not CriterionKey.RUNWAY],
             notices=draft.notices,
             demo_scenario=draft.scenario.value if draft.scenario else None,
+            rule_version=SCREENING_RULE_VERSION,
         )
         elapsed = (run.finished_at - run.started_at).total_seconds()
         log.info(

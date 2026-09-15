@@ -25,6 +25,7 @@ class SleepRecorder:
 
 
 def demo_settings(tmp_path, **overrides: Any) -> Settings:
+    overrides.setdefault("monitor_enabled", False)
     return Settings(_env_file=None, database_path=tmp_path / "scans.sqlite3", **overrides)
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,6 +27,12 @@ from app.scan.export import scan_to_csv
 from app.scan.orchestrator import ScanOrchestrator
 from app.screening.market_calendar import MarketCalendar, new_york_today
 from app.storage.repository import ScanRepository
+from app.api_research import build_research_router
+from app.providers.bpiq_mcp.research import McpResearch
+from app.research.critique import OpenAICritic
+from app.research.monitor import Monitor
+from app.research.service import ResearchService
+from app.storage.research_repository import ResearchRepository
 
 log = get_logger("api")
 
@@ -69,6 +76,33 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
     repository = ScanRepository(settings.database_path)
     orchestrator = orchestrator or ScanOrchestrator(settings=settings, calendar=calendar, repository=repository)
     jobs: dict[str, ScanJob] = {}
+
+    research_repo = ResearchRepository(settings.database_path)
+    # MCP capability mappings are live-only configuration.
+    mcp = McpResearch(
+        settings,
+        get_value=lambda key: research_repo.get_value(DataMode.LIVE, key),
+        set_value=lambda key, value: research_repo.set_value(DataMode.LIVE, key, value),
+    )
+    service = ResearchService(
+        settings=settings,
+        calendar=calendar,
+        scans=repository,
+        repo=research_repo,
+        build_providers=orchestrator.build_providers,
+        mode=lambda: orchestrator.mode,
+        mcp=mcp,
+    )
+    monitor = Monitor(service, enabled=settings.monitor_enabled)
+    critic = OpenAICritic(settings, month_spend=research_repo.ai_month_spend, record_usage=research_repo.record_ai_usage)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        monitor.start()
+        try:
+            yield
+        finally:
+            await monitor.stop()
     log.info(
         "backend starting mode=%s log_level=%s db=%s bpiq_configured=%s alpaca_configured=%s",
         settings.app_mode.value,
@@ -78,13 +112,14 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
         settings.alpaca_configured,
     )
 
-    app = FastAPI(title="Catalyst Screener API", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(title="Catalyst Screener API", docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type"],
     )
+    app.include_router(build_research_router(settings=settings, service=service, monitor=monitor, critic=critic))
 
     @app.get("/api/status")
     def status() -> dict[str, Any]:
@@ -155,6 +190,12 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
                     request.criteria, demo_scenario=request.demo_scenario, progress=on_progress
                 )
                 job.scan_id = run.id
+                try:
+                    created = service.record_paper_trades(run)
+                    if created:
+                        log.info("job %s created %s forward paper trade(s)", job.id[:8], len(created))
+                except Exception:
+                    log.exception("job %s paper-trade recording failed; the scan itself is saved", job.id[:8])
                 job.status = "completed"
                 job.message = "Scan finished"
                 log.info("job %s completed scan=%s outcome=%s", job.id[:8], run.id[:8], run.outcome.value)

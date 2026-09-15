@@ -2,23 +2,30 @@ import { useMemo, useState } from "react";
 import { price, shortDate } from "../format";
 import type { PriceBar } from "../types";
 
-type Range = "5d" | "1m";
+type Range = "5d" | "1m" | "6m" | "1y";
 
 const RANGES: { id: Range; label: string; sessions: number }[] = [
   { id: "5d", label: "5D", sessions: 5 },
   { id: "1m", label: "1M", sessions: 21 },
+  { id: "6m", label: "6M", sessions: 126 },
+  { id: "1y", label: "1Y", sessions: 252 },
 ];
+
+const DEFAULT_NOTE = "Alpaca daily bars (SIP, raw). This is not a live intraday tape — we do not fetch minute bars.";
 
 interface Props {
   ticker: string;
   bars: PriceBar[];
+  note?: string;
 }
 
-export function PriceChart({ ticker, bars }: Props) {
+export function PriceChart({ ticker, bars, note = DEFAULT_NOTE }: Props) {
   const sorted = useMemo(
     () => [...bars].sort((a, b) => a.session_date.localeCompare(b.session_date)),
     [bars],
   );
+  // Longer ranges appear only when there is more history than the previous range shows.
+  const ranges = RANGES.filter((_, i) => i < 2 || sorted.length > RANGES[i - 1].sessions);
   const [range, setRange] = useState<Range>("1m");
   const [hover, setHover] = useState<number | null>(null);
 
@@ -84,7 +91,7 @@ export function PriceChart({ ticker, bars }: Props) {
           </p>
         </div>
         <div className="price-chart-ranges" role="group" aria-label="Chart range">
-          {RANGES.map((item) => (
+          {ranges.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -148,9 +155,7 @@ export function PriceChart({ ticker, bars }: Props) {
           {shortDate(last.session_date)}
         </text>
       </svg>
-      <p className="price-chart-note">
-        Alpaca daily bars (SIP, raw). This is not a live intraday tape — we do not fetch minute bars.
-      </p>
+      <p className="price-chart-note">{note}</p>
     </section>
   );
 }

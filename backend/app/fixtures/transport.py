@@ -35,7 +35,7 @@ DEMO_ALPACA_SECRET = "demo-alpaca-secret"
 DEMO_BPIQ_PAGE_SIZE = 6
 DEMO_BARS_PAGE_CAP = 100
 
-_DATE_TOKEN = re.compile(r"^\{\{today([+-]\d+)\}\}$")
+_DATE_TOKEN = re.compile(r"^\{\{today([+-]\d+)\}\}(T[0-9:.]+Z)?$")
 
 
 class DemoScenario(StrEnum):
@@ -48,6 +48,7 @@ class DemoScenario(StrEnum):
     ALPACA_SIP_FORBIDDEN = "alpaca_sip_forbidden"
     ALPACA_DATA_UNAVAILABLE = "alpaca_data_unavailable"
     ALPACA_PARTIAL_OUTAGE = "alpaca_partial_outage"
+    BPIQ_DATE_REVISED = "bpiq_date_revised"
 
 
 DEMO_SCENARIOS: dict[DemoScenario, tuple[str, str]] = {
@@ -66,6 +67,11 @@ DEMO_SCENARIOS: dict[DemoScenario, tuple[str, str]] = {
         "Alpaca partial failure",
         "Asset lookups fail for two symbols; everything else succeeds.",
     ),
+    DemoScenario.BPIQ_DATE_REVISED: (
+        "BPIQ catalyst changes",
+        "AURX's Phase 3 date moves from +75 to +96 days and BRVN's BRV-114 readout is no longer returned. "
+        "Refresh the watchlist to see revisions.",
+    ),
 }
 
 PARTIAL_OUTAGE_SYMBOLS = frozenset({"SLVR", "QVLT"})
@@ -83,9 +89,9 @@ def load_mock_financials() -> dict[str, dict[str, Any]]:
 def render_catalyst_records(today: date, relative_path: str = "bpiq/catalysts.json") -> list[dict[str, Any]]:
     records = copy.deepcopy(load_fixture(relative_path)["records"])
     for record in records:
-        value = record.get("catalyst_date")
-        if isinstance(value, str) and (match := _DATE_TOKEN.match(value)):
-            record["catalyst_date"] = (today + timedelta(days=int(match.group(1)))).isoformat()
+        for key, value in list(record.items()):
+            if isinstance(value, str) and (match := _DATE_TOKEN.match(value)):
+                record[key] = (today + timedelta(days=int(match.group(1)))).isoformat() + (match.group(2) or "")
     return records
 
 
@@ -101,6 +107,12 @@ class DemoProviderServer:
         self.catalyst_records = render_catalyst_records(today)
         if scenario is DemoScenario.BPIQ_MALFORMED_RECORD:
             self.catalyst_records += render_catalyst_records(today, "bpiq/catalysts_malformed.json")
+        if scenario is DemoScenario.BPIQ_DATE_REVISED:
+            for record in self.catalyst_records:
+                if record["id"] == 5001:
+                    record["catalyst_date"] = (today + timedelta(days=96)).isoformat()
+            self.catalyst_records = [r for r in self.catalyst_records if r["id"] != 5003]
+        self.historical_records = render_catalyst_records(today, "bpiq/historical_catalysts.json")
         self.bar_profiles: dict[str, dict[str, Any]] = load_fixture("alpaca/bar_profiles.json")["profiles"]
         self.assets = {a["symbol"]: a for a in load_fixture("alpaca/assets.json")["assets"]}
         self.bpiq_requests = 0
@@ -120,7 +132,12 @@ class DemoProviderServer:
         if self.scenario is DemoScenario.BPIQ_RATE_LIMITED and self.bpiq_requests == 2:
             # INFERRED: BPIQ documents no 429 response; this mirrors a standard throttle reply.
             return _json(429, {"detail": "Request was throttled."}, headers={"Retry-After": "1"})
-        if request.url.path != "/api/v1/info/catalysts/":
+        path = request.url.path
+        if path == "/api/v1/info/catalysts/":
+            source = self.catalyst_records
+        elif path == "/api/v1/info/historical-catalysts/":
+            source = self.historical_records
+        else:
             return _json(404, {"detail": "Not found."})
 
         params = request.url.params
@@ -133,16 +150,20 @@ class DemoProviderServer:
             cap_max = _opt_float(params.get("market_cap_max"))
         except ValueError:
             return _json(400, {"detail": "Invalid query params or date range."})
+        ticker = params.get("ticker")
 
         matching = [
-            r for r in self.catalyst_records if _catalyst_matches(r, date_min, date_max, cap_min, cap_max)
+            r
+            for r in source
+            if _catalyst_matches(r, date_min, date_max, cap_min, cap_max)
+            and (ticker is None or (r.get("ticker") or (r.get("company") or {}).get("ticker")) == ticker)
         ]
         page = matching[offset : offset + limit]
 
         def link(new_offset: int) -> str:
             query = dict(params)
             query.update({"limit": str(limit), "offset": str(new_offset)})
-            return f"https://api.bpiq.com/api/v1/info/catalysts/?{urlencode(query)}"
+            return f"https://api.bpiq.com{path}?{urlencode(query)}"
 
         return _json(
             200,
