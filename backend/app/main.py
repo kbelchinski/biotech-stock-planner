@@ -29,6 +29,7 @@ from app.screening.market_calendar import MarketCalendar, new_york_today
 from app.storage.repository import ScanRepository
 from app.api_research import build_research_router
 from app.providers.bpiq_mcp.research import McpResearch
+from app.providers.sec_edgar.client import SecEdgarClient
 from app.research.critique import OpenAICritic
 from app.research.monitor import Monitor
 from app.research.service import ResearchService
@@ -92,6 +93,7 @@ def create_app(settings: Settings | None = None, *, orchestrator: ScanOrchestrat
         build_providers=orchestrator.build_providers,
         mode=lambda: orchestrator.mode,
         mcp=mcp,
+        sec=SecEdgarClient(settings),
     )
     monitor = Monitor(service, enabled=settings.monitor_enabled)
     critic = OpenAICritic(settings, month_spend=research_repo.ai_month_spend, record_usage=research_repo.record_ai_usage)

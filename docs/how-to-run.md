@@ -115,6 +115,10 @@ BPIQ_MCP_URL=https://mcp.bpiq.com/mcp
 PUBLIC_BASE_URL=http://127.0.0.1:8000
 UI_BASE_URL=http://localhost:5173
 
+# --- Optional SEC EDGAR insider enrichment (transaction codes, filing links, holdings) ---
+# The SEC requires your name and a contact email in the User-Agent. Leave unset to turn enrichment off.
+SEC_USER_AGENT=Your Name you@example.com
+
 # --- Optional OpenAI "Explain and challenge" ---
 # All four required or calls are refused. Prices = USD per 1M tokens for OPENAI_MODEL.
 # https://developers.openai.com/api/docs/pricing

@@ -130,11 +130,68 @@ Normalization maps explicit candidate field names only and marks every value **U
 field name until checked against real responses. Runway is calculated only when cash, burn and a documented burn
 period (ttm/quarterly/monthly field) are present; non-positive burn is reported without a runway value and never as
 "safe"; reference dates older than 120 days are flagged stale; runway is not reduced for elapsed time. Shelf/ATM
-values are labelled capacity, not issuance. Insider types come only from Form 4 codes (P, S, A, M) or explicit
-wording; other acquisitions are "other". Fund changes use the provider's value, or are calculated only against the
+values are labelled capacity, not issuance. Fund changes use the provider's value, or are calculated only against the
 same fund's immediately preceding period. BPIQ pick/avoid flags are shown separately as provider labels.
 
 Demo mode never calls MCP and has no MCP fixtures, because no schema has been verified.
+
+### Insider transactions (BPIQ, with optional SEC Form 4 enrichment)
+
+**What BPIQ provides (verified 2026-09-18).** `fetch_company_insider_transactions` returns exactly eight string
+fields: `executive`, `executive_title`, `ticker`, `transaction_date`, `shares`, `share_price`, `security_type` and
+`acquisition_or_disposal` (A/D). Checked against the tool description and live responses for VRTX and SRPT (250
+rows each; 250 appears to be a row cap). The provider does **not** return a transaction code, filing date, accession
+number, filing link, post-transaction holdings, direct/indirect ownership, footnotes, CIKs or amendment status.
+These are *field unavailable*, not unmapped.
+
+So BPIQ rows are shown as **Acquired — transaction type unknown** or **Disposed — transaction type unknown**. They are
+never labelled purchases, awards, exercises or sales, and are excluded from any purchase metric. A `share_price` of
+`0.0` is treated as no reported price. Missing filing links and holdings read **Not provided**, never zero.
+
+**SEC enrichment (optional, live mode).** Set `SEC_USER_AGENT` to your name and contact email. The SEC's
+fair-access policy requires this; requests without it are blocked. The app then:
+
+1. Resolves the ticker to a CIK (`https://www.sec.gov/files/company_tickers.json`).
+2. Lists Forms 4 and 4/A filed in the last 365 days (or since the oldest BPIQ row) from
+   `https://data.sec.gov/submissions/CIK##########.json`, newest first, capped at `SEC_MAX_FILINGS` (60).
+3. Parses each filing's ownership XML: issuer and reporting-owner CIKs, name and role, transaction and filing dates,
+   transaction code with the official SEC label, A/D, security title, shares, price, holdings after the
+   transaction, direct/indirect ownership, footnotes, accession number, link and amendment status. Both tables are
+   parsed. Derivative rows are marked, because their shares and holdings count derivative securities.
+
+Requests are rate-limited to `SEC_RATE_LIMIT_PER_SEC` (default 5; the SEC maximum is 10). They are cached in
+`backend/data/sec_cache/`: filing documents indefinitely (they are immutable), the ticker map for a day, and the
+submissions index for an hour. Each value keeps the date it was actually retrieved.
+
+**Transaction codes** follow the SEC list at https://www.sec.gov/edgar/searchedgar/ownershipformcodes.html. The raw
+code is shown next to the official label. Code P is "Open market or private purchase". The source does not separate
+open-market from private purchases, so the app never calls a row an open-market purchase.
+
+**Matching is conservative.** A BPIQ row takes an SEC transaction's detail only when all of these hold:
+
+- **Issuer:** the issuer CIK matches.
+- **Owner:** the reporting-owner name matches as a token set, so "VAN, GRUNSVEN JASPER" equals "van Grunsven Jasper".
+- **Date, A/D and shares:** the transaction date, acquired/disposed flag and share amount are equal.
+- **Security and price:** security type and price are equal *when both sides have them*. Anything not compared is
+  listed on the row.
+- **Uniqueness:** exactly one SEC transaction fits, and no other BPIQ row fits that transaction.
+
+Otherwise the BPIQ row stays unclassified, as *ambiguous*, *unmatched* or *too little detail*. SEC transactions not
+matched to a BPIQ row are listed in a separate table. A ticker and date alone never match.
+
+**Amendments.** A Form 4/A names its original through `dateOfOriginalSubmission`. The app handles them as follows:
+
+- **Replaced rows:** amended transactions replace the original's rows that share the same table, security, date, code
+  and A/D. Replaced rows are hidden and not counted.
+- **Holdings-only amendments:** these leave the original's transactions unchanged.
+- **Unreconciled amendments:** if the original can't be identified, or the row counts differ, the amended rows are
+  shown but not counted, so nothing is double-counted.
+- **Later amendments:** a second amendment replaces the first.
+
+**Provenance.** Each value carries a mark: **B** (BPIQ), **S** (SEC filing) or **B+S** (both agree). Each row shows
+the BPIQ and SEC retrieval times. Transaction and filing dates are separate columns. When SEC enrichment is off or
+fails, the panel shows: "BPIQ identifies shares acquired or disposed of but does not provide enough detail to classify
+the transaction. Filing links and subsequent holdings are unavailable from this source."
 
 ## Optional AI "Explain and challenge" (OpenAI)
 

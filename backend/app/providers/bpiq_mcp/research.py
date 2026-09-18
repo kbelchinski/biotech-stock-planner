@@ -9,6 +9,9 @@ completed). Therefore:
   mapping_verified=False and shows its raw field name, until the mapping is checked against real
   responses and this module is updated.
 - Anything not found is reported as unknown; absence of data is never treated as absence of risk.
+
+Exception, 2026-09-18: fetch_company_insider_transactions was checked against its tool description and live
+responses. Its 8 fields are mapped exactly (see BPIQ_INSIDER_FIELDS); everything else is "field unavailable".
 """
 
 from __future__ import annotations
@@ -287,7 +290,11 @@ class McpResearch:
                 provider=PROVIDER,
                 endpoint=f"tools/call {tool['name']}",
                 retrieved_at=datetime.fromisoformat(raw["retrieved_at"]),
-                timestamp_note="Unverified MCP field mapping; see the raw field name on each value.",
+                timestamp_note=(
+                    "Insider fields verified 2026-09-18 against the tool description and live responses."
+                    if cap == "insiders"
+                    else "Unverified MCP field mapping; see the raw field name on each value."
+                ),
             )
             normalizer = {"financials": normalize_financials, "insiders": normalize_insiders, "funds": normalize_funds}[cap]
             records = normalizer(raw["payload"], source=source, today=today)
@@ -298,6 +305,8 @@ class McpResearch:
                 "records": [r.model_dump(mode="json") for r in records],
                 "raw_preview": json.dumps(raw["payload"], default=str)[:4000],
             }
+            if cap == "insiders" and len(records) >= BPIQ_OBSERVED_ROW_CAP:
+                out[cap]["notes"] = [BPIQ_ROW_CAP_NOTE.format(n=len(records))]
         return out
 
 
@@ -427,37 +436,26 @@ def normalize_financials(payload: Any, *, source: SourceRef, today: date) -> lis
     return measures
 
 
-def _transaction_type(record: dict[str, Any]) -> tuple[str | None, str]:
-    _, code = _find(record, ("transaction_code", "code"))
-    code_str = str(code).strip().upper() if code is not None else None
-    by_code = {"P": "open_market_purchase", "S": "open_market_sale", "A": "award", "M": "option_exercise"}
-    if code_str in by_code:
-        return code_str, by_code[code_str]
-    _, acquired = _find(record, ("acquisition_or_disposal",))
-    if acquired is not None:
-        # Form 4 A/D flag, not a transaction code: grants, exercises and purchases are all "A". Observed 2026-09-14,
-        # many "A" rows had share_price 0.0 (awards). Never label these as open-market trades.
-        letter = str(acquired).strip().upper()[:1]
-        if letter == "A":
-            return letter, "acquisition_unspecified"
-        if letter == "D":
-            return letter, "disposal_unspecified"
-    _, text = _find(record, ("transaction_type", "type", "transaction"))
-    lowered = str(text).lower() if text is not None else ""
-    if "open market" in lowered and ("purchase" in lowered or "buy" in lowered):
-        return code_str, "open_market_purchase"
-    if "open market" in lowered and ("sale" in lowered or "sell" in lowered):
-        return code_str, "open_market_sale"
-    if "award" in lowered or "grant" in lowered:
-        return code_str, "award"
-    if "exercise" in lowered:
-        return code_str, "option_exercise"
-    return code_str, "other" if lowered else "unknown"
+# fetch_company_insider_transactions: VERIFIED 2026-09-18 against the tool description and live responses (VRTX, SRPT;
+# 250 rows each). Every row has exactly these 8 string fields and nothing else:
+BPIQ_INSIDER_FIELDS = (
+    "shares", "ticker", "executive", "share_price", "security_type", "executive_title", "transaction_date", "acquisition_or_disposal",
+)
+# Information the provider does NOT return (field unavailable, not an unverified mapping).
+BPIQ_INSIDER_UNAVAILABLE = (
+    "transaction_code", "filing_date", "accession_number", "source_url", "shares_owned_after", "direct_or_indirect", "footnotes",
+    "reporting_owner_cik", "issuer_cik", "amendment_status",
+)
+BPIQ_ROW_CAP_NOTE = (
+    "BPIQ returned {n} rows, which matches the row count observed as a limit on 2026-09-18; older transactions in the "
+    "provider's four-quarter window may be missing."
+)
+BPIQ_OBSERVED_ROW_CAP = 250
 
 
 def _insider_rows(payload: Any) -> list[dict[str, Any]]:
     rows = _records(payload)
-    if len(rows) == 1 and _find(rows[0], ("shares", "executive", "transaction_date", "insider_name", "share_price"))[0] is None:
+    if len(rows) == 1 and _find(rows[0], ("shares", "executive", "transaction_date", "share_price"))[0] is None:
         nested: list[dict[str, Any]] = []
         for value in rows[0].values():
             if isinstance(value, list):
@@ -468,37 +466,53 @@ def _insider_rows(payload: Any) -> list[dict[str, Any]]:
 
 
 def normalize_insiders(payload: Any, *, source: SourceRef, today: date) -> list[InsiderTransaction]:
+    """Map the verified BPIQ fields only. The A/D flag is never turned into a purchase, award, exercise or sale."""
     out = []
     for r in _insider_rows(payload):
-        name = _str(_find(r, ("insider_name", "name", "owner_name", "reporting_owner", "executive"))[1])
-        tx_date = _date(_find(r, ("transaction_date", "trade_date"))[1])
-        shares = _number(_find(r, ("shares", "shares_traded", "quantity", "num_shares"))[1])
+        name = _str(_find(r, ("executive",))[1])
+        tx_date = _date(_find(r, ("transaction_date",))[1])
+        shares = _number(_find(r, ("shares",))[1])
         if name is None and tx_date is None and shares is None:
             continue  # not a recognizable transaction row
-        code, kind = _transaction_type(r)
-        price = _number(_find(r, ("price", "price_per_share", "share_price"))[1])
-        value = _number(_find(r, ("value", "transaction_value", "total_value"))[1])
+        flag = (_str(_find(r, ("acquisition_or_disposal",))[1]) or "").upper()[:1]
+        acquired_disposed = flag if flag in ("A", "D") else None
+        kind = {"A": "acquired_type_unknown", "D": "disposed_type_unknown"}.get(flag, "unknown")
+        label = {
+            "A": "Acquired — transaction type unknown",
+            "D": "Disposed — transaction type unknown",
+        }.get(flag, "Transaction type unknown")
+        price = _number(_find(r, ("share_price",))[1])
         note = None
         if price is not None and price <= 0:
-            note = "Reported price is 0 (typical of grants/awards or non-cash transactions); no transaction value calculated."
+            # 0.0 is how BPIQ reports rows whose filing has no cash price (e.g. awards, gifts). Not a real price of zero.
+            note = "BPIQ reports a price of 0; treated as no reported price."
             price = None
+        fields = {k: "bpiq" for k, v in (
+            ("insider_name", name), ("role", _find(r, ("executive_title",))[1]), ("transaction_date", tx_date), ("shares", shares),
+            ("price", price), ("security_type", _find(r, ("security_type",))[1]), ("acquired_disposed", acquired_disposed),
+        ) if v is not None}
         out.append(
             InsiderTransaction(
+                origin="bpiq",
                 insider_name=name,
-                role=_str(_find(r, ("role", "title", "relationship", "position", "executive_title"))[1]),
-                transaction_code=code,
+                role=_str(_find(r, ("executive_title",))[1]),
+                transaction_code=None,
+                transaction_label=label,
                 transaction_type=kind,  # type: ignore[arg-type]
+                acquired_disposed=acquired_disposed,  # type: ignore[arg-type]
                 transaction_date=tx_date,
-                security_type=_str(_find(r, ("security_type", "security_title"))[1]),
+                security_type=_str(_find(r, ("security_type",))[1]),
                 note=note,
-                filing_date=_date(_find(r, ("filing_date", "filed_at", "filing_date_time"))[1]),
+                filing_date=None,
                 shares=shares,
                 price=price,
-                value_usd=value if value is not None else (shares * price if shares is not None and price is not None else None),
-                shares_owned_after=_number(_find(r, ("shares_owned_after", "owned_after", "shares_owned"))[1]),
-                source_url=_str(_find(r, ("filing_url", "source_url", "url", "link"))[1]),
-                mapping_verified=False,
+                value_usd=shares * price if shares is not None and price is not None else None,
+                shares_owned_after=None,
+                source_url=None,
+                mapping_verified=True,
                 source=source,
+                field_sources=fields,
+                unavailable_fields=list(BPIQ_INSIDER_UNAVAILABLE),
             )
         )
     return out

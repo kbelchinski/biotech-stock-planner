@@ -8,6 +8,8 @@ import { CriterionCard } from "../components/CompanyDrawer";
 import { PriceChart } from "../components/PriceChart";
 import { EligibilityBadge } from "../components/StatusBadge";
 import { CatalystTimeline } from "../components/research/CatalystTimeline";
+import { AveragePrice } from "../components/research/AveragePrice";
+import { InsiderTransactions } from "../components/research/InsiderTransactions";
 import { Empty, ErrorState, KindBadge, KindLegend, Loading, Notes, Panel, SourceLine, type Kind } from "../components/research/ui";
 
 interface Props {
@@ -357,6 +359,7 @@ function PriceSection({ data }: { data: Research }) {
         bars={ctx.chart_bars}
         note={`Alpaca daily bars, feed=${ctx.feed}, adjustment=${ctx.adjustment} (split-adjusted). Retrieved ${dateTime(ctx.retrieved_at)}.`}
       />
+      <AveragePrice bars={ctx.chart_bars} />
       <div className="mini-table-wrap">
         <table className="mini-table metrics-table">
           <caption className="sr-only">Price and volume metrics</caption>
@@ -485,70 +488,7 @@ function OwnershipSection({ data }: { data: Research }) {
       subtitle="Supporting research signals from filings. They never override screening rules and are not live trades."
     >
       <h3 className="section-title">Insider transactions</h3>
-      {insiders.state === "ok" ? (
-        <div className="mini-table-wrap">
-          <p className="small muted">
-            {insiders.records.length} transaction{insiders.records.length === 1 ? "" : "s"}. Scroll the table for more.
-          </p>
-          <div className="mini-table-scroll" tabIndex={0} aria-label="Insider transactions">
-          <table className="mini-table">
-            <thead>
-              <tr>
-                <th scope="col">Insider</th>
-                <th scope="col">Type</th>
-                <th scope="col">Transaction</th>
-                <th scope="col">Filed</th>
-                <th scope="col" className="num">Shares</th>
-                <th scope="col" className="num">Price</th>
-                <th scope="col" className="num">Value</th>
-                <th scope="col" className="num">Owned after</th>
-                <th scope="col">Filing</th>
-              </tr>
-            </thead>
-            <tbody>
-              {insiders.records.map((raw, i) => {
-                const r = raw as Record<string, string | number | null>;
-                return (
-                  <tr key={i}>
-                    <td>
-                      {r.insider_name ?? "—"}
-                      {r.role && <span className="sub"> · {r.role}</span>}
-                    </td>
-                    <td>
-                      {String(r.transaction_type).replaceAll("_", " ")}
-                      {r.transaction_code && <code> {r.transaction_code}</code>}
-                      {r.security_type && <span className="sub"> · {r.security_type}</span>}
-                      {r.note && <span className="sub"> · {r.note}</span>}
-                    </td>
-                    <td>{shortDate(r.transaction_date as string | null)}</td>
-                    <td>{shortDate(r.filing_date as string | null)}</td>
-                    <td className="num">{r.shares?.toLocaleString() ?? "—"}</td>
-                    <td className="num">{price(r.price as number | null)}</td>
-                    <td className="num">{usd(r.value_usd as number | null)}</td>
-                    <td className="num">{r.shares_owned_after?.toLocaleString() ?? "—"}</td>
-                    <td>
-                      {r.source_url ? (
-                        <a className="link" href={String(r.source_url)} target="_blank" rel="noreferrer noopener">
-                          Filing
-                        </a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-          <p className="small muted">
-            Field mapping unverified. BPIQ reports only an acquired (A) / disposed (D) flag, so purchases, awards, exercises and sales cannot be
-            distinguished; they are shown as "acquisition/disposal unspecified". No filing links or post-transaction holdings are provided.
-          </p>
-        </div>
-      ) : (
-        <McpUnavailable section={insiders} />
-      )}
+      <InsiderTransactions section={data.insiders} unavailable={<McpUnavailable section={insiders} />} />
 
       <h3 className="section-title">Hedge fund holdings (13F filings, reported with a delay)</h3>
       {funds.state === "ok" ? (

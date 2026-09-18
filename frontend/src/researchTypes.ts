@@ -164,6 +164,69 @@ export interface McpSection {
   raw_preview?: string;
 }
 
+export type ValueOrigin = "bpiq" | "sec" | "bpiq+sec";
+
+export interface InsiderRow {
+  origin: ValueOrigin;
+  insider_name: string | null;
+  role: string | null;
+  transaction_code: string | null;
+  transaction_label: string | null;
+  transaction_type: string;
+  acquired_disposed: "A" | "D" | null;
+  transaction_date: string | null;
+  filing_date: string | null;
+  shares: number | null;
+  price: number | null;
+  value_usd: number | null;
+  shares_owned_after: number | null;
+  source_url: string | null;
+  security_type: string | null;
+  note: string | null;
+  table: "non_derivative" | "derivative" | null;
+  direct_or_indirect: "D" | "I" | null;
+  nature_of_ownership: string | null;
+  footnotes: string[];
+  filing: {
+    accession_number: string;
+    form: string;
+    filing_date: string | null;
+    is_amendment: boolean;
+    date_of_original_submission: string | null;
+    url: string;
+    retrieved_at: string | null;
+  } | null;
+  amendment_status: string | null;
+  superseded_by: string | null;
+  field_sources: Record<string, ValueOrigin>;
+  unavailable_fields: string[];
+  match: { status: "matched" | "ambiguous" | "unmatched" | "insufficient" | "not_attempted"; compared: string[]; not_compared: string[]; candidates: number; note: string | null } | null;
+  source: SourceRef;
+  sec_source: SourceRef | null;
+}
+
+export interface InsiderSection {
+  mcp: McpSection & { notes?: string[] };
+  sec: {
+    state: "off" | "ok" | "error" | "unavailable";
+    reason: string | null;
+    records: InsiderRow[];
+    superseded: InsiderRow[];
+    issues: string[];
+    filings_checked?: number;
+    amendments?: number;
+    index_retrieved_at?: string;
+    window_start?: string;
+  };
+  summary: {
+    code_p_purchases: { label: string; count: number; shares: number; note: string };
+    unclassified_bpiq: { acquired: number; disposed: number; note: string };
+    coded_by_code: Record<string, { label: string | null; count: number; shares: number }>;
+    excluded_unreconciled: number;
+  };
+  message: string;
+}
+
 export interface EvidenceItem {
   id: string;
   category: "supporting" | "against" | "missing_or_stale" | "changes" | "invalidation_conditions" | "context";
@@ -206,7 +269,7 @@ export interface Research {
   price_context: PriceContext | null;
   price_context_error: string | null;
   financials: { mcp: McpSection; screening_runway: { status: CriterionStatus; observed: string | null; explanation: string; is_mock: boolean } | null };
-  insiders: { mcp: McpSection };
+  insiders: InsiderSection;
   funds: { mcp: McpSection; provider_flags: ({ event_id: string } & Record<string, boolean | null | string>)[] };
   questions: { id: string; question: string; answer: string; kind: string; known: boolean }[];
   evidence: EvidenceItem[];

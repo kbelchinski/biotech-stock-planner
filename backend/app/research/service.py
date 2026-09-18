@@ -31,9 +31,11 @@ from app.fixtures.transport import DemoScenario
 from app.logging_setup import get_logger
 from app.providers.alpaca.market_data import BarsFetchResult
 from app.providers.bpiq_mcp.research import McpResearch
+from app.providers.sec_edgar.client import SecEdgarClient
 from app.providers.errors import ProviderError
 from app.providers.factory import ConfigurationError, ProviderBundle
 from app.research import catalyst_tracking as tracking
+from app.research.insider_enrichment import build_insider_section
 from app.research.critique import analysis_snapshot, build_evidence, diff_snapshots
 from app.research.performance import (
     PAPER_COST_PCT,
@@ -67,6 +69,7 @@ class ResearchService:
         build_providers: Callable[[DataMode, date, DemoScenario | None], ProviderBundle],
         mode: Callable[[], DataMode],
         mcp: McpResearch,
+        sec: SecEdgarClient | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._settings = settings
@@ -76,6 +79,7 @@ class ResearchService:
         self._build = build_providers
         self._mode = mode
         self.mcp = mcp
+        self.sec = sec
         self._clock = clock
         self.refresh_lock = asyncio.Lock()
         self._cache: dict[tuple, tuple[float, Any]] = {}
@@ -521,7 +525,7 @@ class ResearchService:
                 if runway_criterion
                 else None,
             },
-            "insiders": {"mcp": mcp["insiders"]},
+            "insiders": await build_insider_section(mcp["insiders"], self.sec, ticker, today=today, live=mode is DataMode.LIVE),
             "funds": {"mcp": mcp["funds"], "provider_flags": [{"event_id": c["event_id"], **(c.get("provider_flags") or {})} for c in items]},
             "issues": issues,
         }

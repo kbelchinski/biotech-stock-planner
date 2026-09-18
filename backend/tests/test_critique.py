@@ -105,13 +105,13 @@ def test_ask_context_includes_research_sections():
         "overview": {"name": "X"},
         "screening": {"result": None},
         "catalysts": {"items": [{"event_id": "e1", "catalyst_date": "2026-10-01", "provider_flags": {"is_hedge_fund_pick": True}}], "primary_event_id": "e1"},
-        "insiders": {"mcp": {"state": "ok", "records": [{"transaction_type": "disposal_unspecified", "transaction_date": "2026-09-01"}]}},
+        "insiders": {"mcp": {"state": "ok", "records": [{"transaction_type": "disposed_type_unknown", "transaction_date": "2026-09-01"}]}},
         "funds": {"mcp": {"state": "ok", "records": [{"fund": "F", "period_end": "2026-06-30", "shares": 10}, {"fund": "F", "period_end": "2025-12-31"}, {"fund": "F", "period_end": "2026-03-31"}]}},
         "financials": {"mcp": {"state": "unavailable", "reason": "not connected", "records": []}},
     }
     ctx = build_ask_context(research, EVIDENCE)
     assert ctx["D:catalysts"][0]["provider_flags_true"] == ["is_hedge_fund_pick"] and ctx["D:catalysts"][0]["is_primary"]
-    assert ctx["D:insiders"]["counts_by_type"] == {"disposal_unspecified": 1}
+    assert ctx["D:insiders"]["counts_by_type"] == {"disposed_type_unknown": 1}
     assert {r["period_end"] for r in ctx["D:funds"]["latest_periods"]} == {"2026-06-30", "2026-03-31"}
     assert ctx["D:financials"]["reason"] == "not connected" and len(ctx["evidence"]) == 2
 

@@ -346,21 +346,59 @@ class FinancialMeasure(BaseModel):
     source: SourceRef | None
 
 
+InsiderCategory = Literal[
+    # Official SEC code P: "Open market or private purchase". The code alone does not separate the two.
+    "purchase_open_market_or_private",
+    "sale_open_market_or_private",
+    "grant_or_award",
+    "derivative_exercise_or_conversion",
+    "tax_or_exercise_price_withholding",
+    "disposition_to_issuer",
+    "gift",
+    "other_coded",
+    # Only an acquired (A) / disposed (D) flag is known: the transaction type is unknown.
+    "acquired_type_unknown",
+    "disposed_type_unknown",
+    "unknown",
+]
+
+
+class SecFilingRef(BaseModel):
+    """The Form 4 / 4/A an SEC-enriched transaction came from."""
+
+    accession_number: str
+    form: str
+    filing_date: date | None
+    period_of_report: date | None
+    is_amendment: bool
+    date_of_original_submission: date | None
+    url: str
+    issuer_cik: str | None
+    reporting_owner_cik: str | None
+    retrieved_at: datetime | None
+
+
+class InsiderMatch(BaseModel):
+    # matched: exactly one SEC transaction agrees on every compared field, and no other BPIQ row claims it.
+    # ambiguous: more than one SEC transaction (or BPIQ row) fits; the BPIQ row stays unclassified.
+    # unmatched: no SEC transaction fits. insufficient: the BPIQ row lacks owner, date or shares.
+    # not_attempted: SEC enrichment is not configured or failed.
+    status: Literal["matched", "ambiguous", "unmatched", "insufficient", "not_attempted"]
+    compared: list[str] = []
+    not_compared: list[str] = []
+    candidates: int = 0
+    note: str | None = None
+
+
 class InsiderTransaction(BaseModel):
+    origin: Literal["bpiq", "sec", "bpiq+sec"] = "bpiq"
     insider_name: str | None
     role: str | None
+    # Raw SEC transaction code (P, S, A, M, F, ...). Never derived from BPIQ's A/D flag.
     transaction_code: str | None
-    transaction_type: Literal[
-        "open_market_purchase",
-        "open_market_sale",
-        "award",
-        "option_exercise",
-        # Provider A/D flag only: the transaction may be a purchase, award, exercise, gift, sale, tax withholding, etc.
-        "acquisition_unspecified",
-        "disposal_unspecified",
-        "other",
-        "unknown",
-    ]
+    transaction_label: str | None = None
+    transaction_type: InsiderCategory
+    acquired_disposed: Literal["A", "D"] | None = None
     transaction_date: date | None
     filing_date: date | None
     shares: float | None
@@ -372,6 +410,22 @@ class InsiderTransaction(BaseModel):
     source: SourceRef
     security_type: str | None = None
     note: str | None = None
+    table: Literal["non_derivative", "derivative"] | None = None
+    direct_or_indirect: Literal["D", "I"] | None = None
+    nature_of_ownership: str | None = None
+    footnotes: list[str] = []
+    issuer_cik: str | None = None
+    reporting_owner_cik: str | None = None
+    filing: SecFilingRef | None = None
+    amendment_status: Literal["original", "amendment", "amended_holdings_only", "added_by_amendment", "unreconciled_amendment"] | None = None
+    # SEC transactions replaced by a later 4/A are kept for audit but excluded from lists and counts.
+    superseded_by: str | None = None
+    # Field name -> "bpiq" | "sec": which provider supplied each displayed value.
+    field_sources: dict[str, str] = {}
+    # Fields the provider does not return at all (as opposed to returned-but-empty).
+    unavailable_fields: list[str] = []
+    match: InsiderMatch | None = None
+    sec_source: SourceRef | None = None
 
 
 class FundHolding(BaseModel):

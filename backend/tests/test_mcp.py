@@ -125,30 +125,39 @@ def test_financial_normalizer_never_labels_missing_as_safe():
 
 
 def test_insider_types_are_not_all_purchases_and_fund_changes_use_prior_period():
+    # Guessed field names (transaction_code, type) are not in the verified BPIQ schema and are ignored.
     rows = normalize_insiders(
-        [{"transaction_code": "P", "shares": 100, "price": 2}, {"transaction_code": "A", "shares": 5}, {"type": "Acquisition", "shares": 1}, {"shares": 2}, {}],
+        [{"transaction_code": "P", "executive": "A", "shares": 100, "share_price": 2}, {"type": "Acquisition", "shares": 1}, {}],
         source=SOURCE,
         today=date(2026, 9, 14),
     )
-    assert [r.transaction_type for r in rows] == ["open_market_purchase", "award", "other", "unknown"]
-    assert rows[0].value_usd == 200
+    assert [r.transaction_type for r in rows] == ["unknown", "unknown"]
+    assert all(r.transaction_code is None for r in rows)
     bpiq = normalize_insiders(
         [
             {
                 "executive": "Jane Doe",
                 "executive_title": "CEO",
-                "shares": 50,
-                "share_price": 4,
+                "shares": "50.0",
+                "share_price": "4.0",
                 "transaction_date": "2026-08-01",
                 "acquisition_or_disposal": "A",
-            }
+                "ticker": "ABC",
+            },
+            {"executive": "Joe Roe", "shares": "10.0", "share_price": "5.0", "transaction_date": "2026-08-02", "acquisition_or_disposal": "D"},
         ],
         source=SOURCE,
         today=date(2026, 9, 14),
     )
     assert bpiq[0].insider_name == "Jane Doe" and bpiq[0].role == "CEO"
-    # The A/D flag does not say how shares were acquired: never an open-market purchase.
-    assert bpiq[0].price == 4 and bpiq[0].transaction_type == "acquisition_unspecified"
+    # The A/D flag does not say how shares were acquired: never a purchase, award, exercise or sale.
+    assert bpiq[0].price == 4 and bpiq[0].transaction_type == "acquired_type_unknown" and bpiq[0].transaction_code is None
+    assert bpiq[0].transaction_label == "Acquired — transaction type unknown"
+    assert bpiq[1].transaction_type == "disposed_type_unknown" and bpiq[1].transaction_label == "Disposed — transaction type unknown"
+    # Fields BPIQ never returns are "unavailable" (None), not zero.
+    assert bpiq[0].shares_owned_after is None and bpiq[0].source_url is None and bpiq[0].filing_date is None
+    assert {"shares_owned_after", "source_url", "transaction_code", "filing_date"} <= set(bpiq[0].unavailable_fields)
+    assert bpiq[0].field_sources["shares"] == "bpiq"
     award = normalize_insiders(
         [{"executive": "X", "shares": "100.0", "share_price": "0.0", "acquisition_or_disposal": "A", "security_type": "Common Stock"}, {"unrelated": 1}],
         source=SOURCE,

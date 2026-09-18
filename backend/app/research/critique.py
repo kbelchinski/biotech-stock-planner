@@ -388,8 +388,12 @@ def build_ask_context(research: dict[str, Any], evidence: list[dict[str, Any]]) 
         section = section or {}
         return {"state": section.get("state"), "reason": section.get("reason"), "tool": section.get("tool")}
 
-    insiders = ((research.get("insiders") or {}).get("mcp")) or {}
-    insider_rows = sorted(insiders.get("records", []), key=lambda r: r.get("transaction_date") or "", reverse=True)
+    insider_section = research.get("insiders") or {}
+    insiders = insider_section.get("mcp") or {}
+    sec_section = insider_section.get("sec") or {}
+    insider_rows = sorted(
+        insiders.get("records", []) + sec_section.get("records", []), key=lambda r: r.get("transaction_date") or "", reverse=True
+    )
     counts: dict[str, int] = {}
     for row in insider_rows:
         counts[row.get("transaction_type") or "unknown"] = counts.get(row.get("transaction_type") or "unknown", 0) + 1
@@ -450,12 +454,23 @@ def build_ask_context(research: dict[str, Any], evidence: list[dict[str, Any]]) 
         },
         "D:insiders": {
             **mcp(insiders),
+            "sec_enrichment": {k: sec_section.get(k) for k in ("state", "reason", "filings_checked")},
             "counts_by_type": counts,
+            "summary": insider_section.get("summary"),
             "recent": [
-                {k: r.get(k) for k in ("insider_name", "role", "transaction_type", "security_type", "transaction_date", "shares", "price")}
+                {
+                    k: r.get(k)
+                    for k in (
+                        "origin", "insider_name", "role", "transaction_code", "transaction_label", "acquired_disposed",
+                        "security_type", "transaction_date", "filing_date", "shares", "price", "shares_owned_after",
+                    )
+                }
                 for r in insider_rows[:25]
             ],
-            "caveat": "Provider gives only an acquired/disposed flag; purchases, awards and exercises cannot be distinguished.",
+            "caveat": (
+                "Rows without transaction_code carry only BPIQ's acquired (A) / disposed (D) flag: the transaction type is unknown "
+                "and they must not be described as purchases, awards, exercises or sales. SEC code P means open market OR private purchase."
+            ),
         },
         "D:funds": {
             **mcp(funds),

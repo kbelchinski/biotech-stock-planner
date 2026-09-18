@@ -39,6 +39,7 @@ These are implemented deterministically and explained in the UI, but they were n
 ## Research features (added 2026-09-14)
 
 1. **BPIQ MCP tools are unverified.** OAuth consent has not been completed, so no tool list, schema, or response has been inspected. Financial, insider, and fund panels show *Unknown / unavailable* until you connect, discover tools, and confirm a mapping. Even after that, normalized values are labelled *Unverified mapping* until the field names are checked against real responses and the code is updated.
+   *Exception:* the insider tool's fields were verified on 2026-09-18. It returns only an acquired/disposed flag: no transaction code, filing link or holdings. See research-features.md.
 2. **Cash runway in live screening is still unavailable.** MCP financials are shown on the research page only. They do not feed the runway criterion.
 3. **Apex trial horizon:** watchlist refreshes see catalysts only within 30 days. Later events stay as last stored and are never marked "no longer returned".
 4. **Outcome matching is heuristic:** same drug name within 14 days, because BPIQ does not link upcoming and historical record ids.
@@ -55,3 +56,4 @@ These are implemented deterministically and explained in the UI, but they were n
 - The exchange calendar is the local `exchange_calendars` XNYS calendar. Keep the package updated so newly announced holidays are reflected.
 - Adjustment is `raw` for both price and volume, so the two are mutually consistent. Turnover in dollars is unaffected by splits.
 - The app has no authentication by design. Run it on `127.0.0.1` only; do not expose it to a network.
+11. **SEC insider enrichment is limited to recent Form 4/4A filings** (last 365 days, at most `SEC_MAX_FILINGS`). Forms 3 and 5 are not read. Matching is deliberately strict: BPIQ rows with differently spelled names or rounded share counts stay unclassified rather than risk a wrong match.

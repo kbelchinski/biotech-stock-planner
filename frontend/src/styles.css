@@ -1449,6 +1449,61 @@ code {
   stroke: var(--pass);
 }
 
+.avg-price {
+  margin: var(--s4) 0;
+  padding: var(--s3) var(--s4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.avg-price-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.avg-price-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.avg-price-value {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.avg-price-control {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s3);
+}
+
+.avg-price-slider {
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.avg-price-end {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
 .callout {
   margin: 0;
   padding: var(--s2) var(--s3);
@@ -2996,4 +3051,48 @@ ins {
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* ------------------------------------------------------------------ insider transactions */
+
+.section-subtitle {
+  margin: var(--s4) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.origin-mark {
+  margin-left: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+
+.insider-summary {
+  margin: var(--s2) 0 0;
+  padding-left: 1.2em;
+  color: var(--text-2);
+}
+
+.insider-tx {
+  min-width: 16rem;
+}
+
+.mini-table td .wrap,
+.mini-table td details {
+  white-space: normal;
+  max-width: 26rem;
+}
+
+.footnote-list {
+  margin: 2px 0 0;
+  padding-left: 1.1em;
+}
+
+.insider-stack {
+  align-items: flex-start;
+  gap: 2px;
 }

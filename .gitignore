@@ -17,6 +17,8 @@ backend/data/*.sqlite3
 backend/data/*.sqlite3-*
 # diagnostics, MCP OAuth tokens, discovered MCP tool schemas
 backend/data/*.json
+# cached SEC EDGAR responses
+backend/data/sec_cache/
 
 # Node
 node_modules/

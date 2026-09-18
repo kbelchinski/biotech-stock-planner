@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     ui_base_url: str = "http://localhost:5173"
     bpiq_mcp_rate_limit_per_min: int = 10
 
+    # --- Optional SEC EDGAR insider enrichment (live mode). SEC fair access requires a declared User-Agent with a
+    # contact email, e.g. "Jane Doe jane@example.com", and at most 10 requests/second. Unset = enrichment off.
+    sec_user_agent: str | None = None
+    sec_rate_limit_per_sec: int = 5
+    # Most recent Form 4 / 4/A filings fetched per company per research request (bounds request volume).
+    sec_max_filings: int = 60
+
     # --- Optional OpenAI "Explain and challenge" (manual trigger only) ---
     openai_api_key: SecretStr | None = None
     openai_model: str | None = None
